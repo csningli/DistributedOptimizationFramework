@@ -48,7 +48,7 @@ class Agent(object) :
         self.round = -1
 
     def info(self) :
-        return f"<<Disto.{type(self).__name__} id = {self.id}; data = {type(self.data).__name__}>>"
+        return f"<<Disto.{type(self).__name__} id = {self.id}; data = {type(self.data).__name__}; prob = {type(self.prob).__name__}; solv = {type(self.solv).__name__}>>"
 
     def run(self, rounds = 1) :
         self.data.start()

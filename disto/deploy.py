@@ -4,11 +4,11 @@ from multiprocessing import Process
 
 from disto.utils import *
 
-# uniform solver independent problems
 
 def run_agent(agent, rounds = 1) :
     agent.run(rounds = rounds)
 
+# uniform solver independent problems
 def usip_deploy(agents, solv, probs, rounds = 1) :
     result = {"start" : get_current_time(), "finish" : None}
     for agent, prob in zip(agents, probs) :

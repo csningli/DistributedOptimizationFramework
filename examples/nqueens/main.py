@@ -10,9 +10,9 @@ def n_queens(n) :
 
 if __name__ == "__main__" :
     result = n_queens(n = 2)
-    print("-" * 35)
+    print("-" * 50)
     print("Start:   %s" % result["start"])
     print("Finish:  %s" % result["finish"])
-    print("-" * 35)
+    print("-" * 50)
     for id in sorted(list(result["asgns"].keys())) :
         print("Agent %s's assignment: %s" % (id, result["asgns"][id]))

@@ -2,7 +2,7 @@
 from disto.agent import Agent, ProcessDataAccess
 from disto.deploy import usip_deploy
 
-def n_queens(n) :
+def graph_coloring(n) :
     agents = [Agent(id = i, data = ProcessDataAccess()) for i in range(n)]
     probs = [None] * n
     result = usip_deploy(agents = agents, solv = None, probs = probs, rounds = 5)

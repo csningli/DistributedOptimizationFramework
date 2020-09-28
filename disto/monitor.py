@@ -4,9 +4,10 @@ from multiprocessing import Process
 
 from disto.utils import *
 
-def run_agent(agent, queue, timeout = 60) :
+def run_agent(agent, in_queue, out_queue, timeout = 60) :
     start_time = time.time()
     while time.time() - start_time < timeout :
+        msgs = get_all_items_in_queue(q)
         agent.run()
 
 

@@ -17,12 +17,15 @@ class Problem(object) :
         self.vars = vars
         self.cons = cons
 
+    def info(self) :
+        return f"<<Disto.{type(self).__name__} num_vars = {len(self.vars)}; num_cons = {len(self.cons)}>>"
+
     def split(self, avars) :
-    '''
-    split the problem into several sub-problems.
-    -------------------------
-    avars : a list, where the i-th item is the list of variables assigned to the i-th agent
-    '''
+        '''
+        split the problem into several sub-problems.
+        -------------------------
+        avars : a list, where the i-th item is the list of variables assigned to the i-th agent
+        '''
         mapping = {}
         for i, vars in enumerate(avars) :
             for var in vars :

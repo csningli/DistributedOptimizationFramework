@@ -1,8 +1,9 @@
 
 import sys, os, time
 import doctest
+import networkx as nx
 
-from disto.problem import Problem
+from disto.problem import Problem, GraphColoringProblem
 
 def test_problem() :
     '''
@@ -11,6 +12,24 @@ def test_problem() :
     '''
     pro = Problem(vars = {"1" : None}, cons = [])
     print(f"Problem: {pro.info()}")
+
+def test_graph_coloring_problem() :
+    '''
+    >>> test_graph_coloring_problem()
+    Graph nodes: ['1', '2']
+    Graph edges: [('1', '2')]
+    Graph Coloring Problem: <<Disto.GraphColoringProblem num_nodes = 2; num_edges = 1; num_colors = 2>>
+    Problem: <<Disto.GraphColoringProblem num_vars = 2; num_cons = 1>>
+    '''
+    graph = nx.Graph()
+    graph.add_node("1")
+    graph.add_node("2")
+    graph.add_edge("1", "2")
+    print(f"Graph nodes: {graph.nodes}")
+    print(f"Graph edges: {graph.edges}")
+    pro = GraphColoringProblem(graph = graph, num_colors = 2)
+    print(f"Graph Coloring Problem: {pro.info()}")
+    print(f"Problem: {super(GraphColoringProblem, pro).info()}")
 
 if __name__ == '__main__' :
     result = doctest.testmod()

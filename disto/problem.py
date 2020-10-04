@@ -47,10 +47,15 @@ class DiffConstraint(Constraint) :
 
 class GraphColoringProblem(Problem) :
     def __init__(self, graph, num_colors = 4) :
-        domain = Domain(values = [i for i in range(num_colors)])
-        n = graph.number_of_nodes()
+        self.graph = graph
+        self.num_colors = num_colors
+        domain = Domain(values = [i for i in range(self.num_colors)])
+        n = self.graph.number_of_nodes()
         vars = {"n%d" % i : domain for i in range(n)}
         cons = []
-        for edge in graph.edges :
+        for edge in self.graph.edges :
             cons.append(BinaryDiffConstraint(vars = [edge[0], edge[1]]))
         super(GraphColoringProblem, self).__init__(vars = vars, cons = cons)
+
+    def info(self) :
+        return f"<<Disto.{type(self).__name__} num_nodes = {len(self.graph.nodes)}; num_edges = {len(self.graph.edges)}; num_colors = {self.num_colors}>>"

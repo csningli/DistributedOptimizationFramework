@@ -26,7 +26,8 @@ if [ $# -gt 0 ]
 then
   python $1.py $2 $3
 else
-  for TEST in agent domain constraint problem
+  for TEST in agent domain constraint problem \
+              message monitor
   do
     python tests/test_$TEST.py
   done

@@ -13,6 +13,11 @@ def run_agent(agent, in_queue, out_queue, timeout = 60) :
 
 class Message(object) :
     def __init__(self, src, dest, content) :
+        '''
+        dest :  single id - the id of the destination agent;
+                list of ids - list of ids of the destination agents;
+                None - all the agents other than the one of src id.
+        '''
         self.src = src
         self.dest = dest
         self.content = content
@@ -35,7 +40,7 @@ class Monitor(object) :
                 if msg is not None :
                     dest = []
                     if msg.dest is None :
-                        dest = list(range(len(agents)))
+                        dest = [agent.id for agent in agents if agent.id != msg.src]
                     elif hasattr(msg.dest, "__item__") :
                         dest = msg.dest
                     else :

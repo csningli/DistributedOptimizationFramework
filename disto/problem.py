@@ -33,7 +33,7 @@ class Problem(object) :
         acons = [[] for i in range(len(avars))]
         for con in self.cons :
             for var in con.vars :
-                acons[mapping(var)].append(con)
+                acons[mapping[var]].append(con)
         pros = [type(self)(vars = avars[i], cons = acons[i]) for i in range(len(avars))]
         return pros
 

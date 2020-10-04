@@ -3,15 +3,21 @@ import sys, os, time
 import doctest
 import networkx as nx
 
-from disto.problem import Problem, GraphColoringProblem
+from disto.problem import Constraint, Problem, GraphColoringProblem
 
 def test_problem() :
     '''
     >>> test_problem()
-    Problem: <<Disto.Problem num_vars = 1; num_cons = 0>>
+    Problem: <<Disto.Problem num_vars = 2; num_cons = 1>>
+    Sub Problem 0: <<Disto.Problem num_vars = 1; num_cons = 1>>
+    Sub Problem 1: <<Disto.Problem num_vars = 1; num_cons = 1>>
     '''
-    pro = Problem(vars = {"1" : None}, cons = [])
+    pro = Problem(vars = {"1" : None, "2" : None}, cons = [Constraint(vars = ["1", "2"])])
     print(f"Problem: {pro.info()}")
+    sub_pros = pro.split([["1"], ["2"]])
+    for i, sub_pro in enumerate(sub_pros) :
+        print(f"Sub Problem {i}: {sub_pro.info()}")
+
 
 def test_graph_coloring_problem() :
     '''

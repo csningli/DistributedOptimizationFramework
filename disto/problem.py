@@ -5,6 +5,17 @@ class Domain(object) :
     def __init__(self, values) :
         self.values = values
 
+    def first_value(self) :
+        return None if len(self.values) < 1 else self.values[0]
+
+    def next_value(self, value) :
+        next = None
+        if value in self.values :
+            index = self.values.index(value) + 1
+            if index < len(self.values) :
+                next = self.values[index]
+        return next
+
 class Constraint(object) :
     def __init__(self, vars) :
         self.vars = vars
@@ -14,6 +25,10 @@ class Constraint(object) :
 
 class Problem(object) :
     def __init__(self, vars, cons) :
+        '''
+        vars : dict of var - domain pairs;
+        cons : list of constraints.
+        '''
         self.vars = vars
         self.cons = cons
 
@@ -34,7 +49,7 @@ class Problem(object) :
         for con in self.cons :
             for var in con.vars :
                 acons[mapping[var]].append(con)
-        pros = [type(self)(vars = avars[i], cons = acons[i]) for i in range(len(avars))]
+        pros = [type(self)(vars = {var : self.vars[var] for var in avars[i]}, cons = acons[i]) for i in range(len(avars))]
         return pros
 
 class BinaryDiffConstraint(Constraint) :

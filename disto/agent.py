@@ -14,4 +14,13 @@ class Agent(object) :
         return {"msgs" : msgs}
 
 class SyncBTAgent(Agent) :
-    pass
+    def __init__(self, id, pro) :
+        super(SyncBTAgent, self).__init__(id = id, pro = pro)
+        self.assign = {}
+        if self.pro is not None :
+            for var, domain in self.pro.vars.items() :
+                self.assign[var] = domain.first_value()
+
+    def process(self, msgs) :
+        msgs = []
+        return {"msgs" : msgs}

@@ -10,13 +10,16 @@ def test_problem() :
     >>> test_problem()
     Problem: <<Disto.Problem num_vars = 2; num_cons = 1>>
     Sub Problem 0: <<Disto.Problem num_vars = 1; num_cons = 1>>
+    vars: {'1': None}
     Sub Problem 1: <<Disto.Problem num_vars = 1; num_cons = 1>>
+    vars: {'2': None}
     '''
     pro = Problem(vars = {"1" : None, "2" : None}, cons = [Constraint(vars = ["1", "2"])])
     print(f"Problem: {pro.info()}")
     sub_pros = pro.split([["1"], ["2"]])
     for i, sub_pro in enumerate(sub_pros) :
         print(f"Sub Problem {i}: {sub_pro.info()}")
+        print(f"vars: {sub_pro.vars}")
 
 
 def test_graph_coloring_problem() :

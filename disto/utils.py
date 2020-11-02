@@ -36,3 +36,13 @@ def put_items_to_queue(q, items):
             q.put_nowait(item)
         except queue.Full as e:
             break
+
+def print_problem(pro) :
+    print("Problem:")
+    print(pro.info())
+    print("Variables:")
+    for var, domain in pro.vars.items() :
+        print("%s -> %s" %(var, domain.info()))
+    print("Constraints:")
+    for con in pro.cons :
+        print("%s : %s" %(con.info(), con.vars))

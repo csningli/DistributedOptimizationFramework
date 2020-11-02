@@ -5,6 +5,9 @@ class Domain(object) :
     def __init__(self, values) :
         self.values = values
 
+    def info(self) :
+        return f"<<Disto.{type(self).__name__} num_values = {len(self.values)}>>"
+
     def first_value(self) :
         return None if len(self.values) < 1 else self.values[0]
 
@@ -19,6 +22,9 @@ class Domain(object) :
 class Constraint(object) :
     def __init__(self, vars) :
         self.vars = vars
+
+    def info(self) :
+        return f"<<Disto.{type(self).__name__} num_vars = {len(self.vars)}>>"
 
     def utility(self, x) :
         return 0
@@ -49,7 +55,7 @@ class Problem(object) :
         for con in self.cons :
             for var in con.vars :
                 acons[mapping[var]].append(con)
-        pros = [type(self)(vars = {var : self.vars[var] for var in avars[i]}, cons = acons[i]) for i in range(len(avars))]
+        pros = [Problem(vars = {var : self.vars[var] for var in avars[i]}, cons = acons[i]) for i in range(len(avars))]
         return pros
 
 class BinaryDiffConstraint(Constraint) :
@@ -66,7 +72,7 @@ class GraphColoringProblem(Problem) :
         self.num_colors = num_colors
         domain = Domain(values = [i for i in range(self.num_colors)])
         n = self.graph.number_of_nodes()
-        vars = {"n%d" % i : domain for i in range(n)}
+        vars = {"%d" % i : domain for i in range(n)}
         cons = []
         for edge in self.graph.edges :
             cons.append(BinaryDiffConstraint(vars = [edge[0], edge[1]]))

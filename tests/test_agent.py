@@ -7,7 +7,7 @@ from disto.agent import Agent
 def test_agent() :
     '''
     >>> test_agent()
-    Agent: <<Disto.Agent id = 0; pro = None>>
+    Agent: <<Disto.Agent id = 0; pro = False>>
     agent.process(msgs = [None]) -> msgs: {'msgs': []}
     '''
     agent = Agent(id = "0", pro = None)

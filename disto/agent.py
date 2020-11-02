@@ -7,7 +7,7 @@ class Agent(object) :
         self.pro = pro
 
     def info(self) :
-        return f"<<Disto.{type(self).__name__} id = {self.id}; pro_size = ({len(self.pro.vars)}, {len(self.pro.cons)})>>"
+        return f"<<Disto.{type(self).__name__} id = {self.id}; pro = {True if self.pro is not None else False}>>"
 
     def process(self, msgs) :
         msgs = []

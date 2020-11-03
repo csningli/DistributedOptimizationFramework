@@ -22,9 +22,19 @@ class Message(object) :
         self.dest = dest
         self.content = content
 
+class CommMessage(Message) :
+    def __init__(self, src, dest, content) :
+        super(CommMessage, self).__init__(src = src, dest = dest, content = content)
+
+class SysMessage(Message) :
+    def __init__(self, src, content) :
+        super(SysMessage, self).__init__(src = src, dest = None, content = content)
+
 class Monitor(object) :
     def __init__(self) :
-        pass
+        self.running = False
+        self.sys_msgs = []
+
     def run(self, agents, timeout = 60) :
         in_queues = [queue.Queue() for i in range(len(agents))]
         out_queues = [queue.Queue() for i in range(len(agents))]
@@ -33,11 +43,17 @@ class Monitor(object) :
             "timeout" : timeout}) for i in range(len(agents))]
         for process in pool :
             process.start()
+
+        self.running = True
+        self.sys_msgs = []
+
         start_time = time.time()
-        while time.time() - start_time < timeout :
+        while self.running and time.time() - start_time < timeout :
             for i, out_queue in enumerate(out_queues) :
                 msg = get_one_item_in_queue(out_queue)
-                if msg is not None :
+                if isinstance(msg, SysMessage) :
+                    self.sys_msgs.append(msg)
+                elif isinstance(msg, CommMessage) :
                     dest = []
                     if msg.dest is None :
                         dest = [agent.id for agent in agents if agent.id != msg.src]
@@ -47,5 +63,10 @@ class Monitor(object) :
                         dest.append(msg.dest)
                     for i in dest :
                         put_one_item_to_queue(in_queues[i], msg)
+                if len(self.sys_msgs) > 0 :
+                    self.handle_sys_msgs()
         for process in pool :
             process.join()
+
+    def handle_sys_msgs(self) :
+        self.sys_msgs = []

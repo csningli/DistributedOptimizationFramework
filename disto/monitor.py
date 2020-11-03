@@ -1,15 +1,17 @@
 
 import time
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 
 from disto.utils import *
 
 def run_agent(agent, in_queue, out_queue, timeout = 60) :
     start_time = time.time()
     while time.time() - start_time < timeout :
-        msg = get_one_item_in_queue(in_queue)
-        result = agent.process(msgs = [msg])
-        put_items_to_queue(out_queue, result.get("msgs", []))
+        in_msg = get_one_item_in_queue(in_queue)
+        result = agent.process(msgs = [in_msg])
+        out_msgs = result.get("msgs", [])
+        if len(out_msgs) > 0 :
+            put_items_to_queue(out_queue, items = out_msgs)
 
 class Message(object) :
     def __init__(self, src, dest, content) :
@@ -32,11 +34,12 @@ class SysMessage(Message) :
 
 class Monitor(object) :
     def __init__(self) :
+        self.mem = []
         self.running = False
 
     def run(self, agents, timeout = 60) :
-        in_queues = [queue.Queue() for i in range(len(agents))]
-        out_queues = [queue.Queue() for i in range(len(agents))]
+        in_queues = [Queue() for i in range(len(agents))]
+        out_queues = [Queue() for i in range(len(agents))]
         pool = [Process(target = run_agent, kwargs = {
             "agent" : agents[i], "in_queue": in_queues[i], "out_queue" : out_queues[i],
             "timeout" : timeout}) for i in range(len(agents))]
@@ -51,7 +54,7 @@ class Monitor(object) :
             for i, out_queue in enumerate(out_queues) :
                 msg = get_one_item_in_queue(out_queue)
                 if isinstance(msg, SysMessage) :
-                    self.sys_msgs.append(msg)
+                    sys_msgs.append(msg)
                 elif isinstance(msg, CommMessage) :
                     dest = []
                     if msg.dest is None :
@@ -63,7 +66,7 @@ class Monitor(object) :
                     for i in dest :
                         put_one_item_to_queue(in_queues[i], msg)
             if len(sys_msgs) > 0 :
-                self.handle_sys_msgs()
+                self.handle_sys_msgs(msgs = sys_msgs)
                 sys_msgs = []
         for process in pool :
             process.join()
@@ -72,3 +75,5 @@ class Monitor(object) :
         for msg in msgs :
             if msg.content == None :
                 self.running = False
+            else :
+                self.mem.append(msg.content)

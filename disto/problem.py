@@ -11,6 +11,9 @@ class Domain(object) :
     def first_value(self) :
         return None if len(self.values) < 1 else self.values[0]
 
+    def last_value(self) :
+        return None if len(self.values) < 1 else self.values[-1]
+
     def next_value(self, value) :
         next = None
         if value in self.values :
@@ -18,6 +21,57 @@ class Domain(object) :
             if index < len(self.values) :
                 next = self.values[index]
         return next
+
+def init_assign(vars, order_list = None) :
+    order_list = sorted(list(vars.keys())) if order_list is None else order_list
+    assign = {}
+    for var in order_list :
+        assign[var] = vars[var].first_value()
+    return assign
+
+def next_assign(assign, vars, order_list = None) :
+    order_list = sorted(list(assign.keys())) if order_list is None else order_list
+    order_list.reverse()
+    next = assign
+    for i, var in enumerate(order_list) :
+        if assign[var] != vars[var].last_value() :
+            assign[var] = vars[var].next_value(assign[var])
+            for j in range(i) :
+                assign[order_list[j]] = vars[order_list[j]].first_value()
+    return assign
+
+def cover_cons(cons, assign) :
+    cons = []
+    for con in cons :
+        covered = True
+        for var in con.vars :
+            if not next.has_key(var) :
+                covered = False
+                break
+        if covered == True :
+            cons.append(con)
+    return cons
+
+def total_utility(cons, assign) :
+    u = None
+    for con in cons :
+        v = con.fit(assign)
+        u = None if v is None else u + v
+    return u
+
+def fix_assign(pro, assign, order_list = None) :
+    order_list = sorted(list(pro.vars.keys())) if order_list is None else order_list
+    fixed = assign
+    cons = cover_cons(pro.cons, assign)
+    u = total_utility(cons, fixed)
+    while u is None :
+        next = next_assign(fixed, pro.vars, order_list)
+        if next == fixed :
+            break
+        else :
+            fixed = next
+        u = total_utility(cons, fixed)
+    return fixed
 
 class Constraint(object) :
     def __init__(self, vars) :
@@ -60,11 +114,11 @@ class Problem(object) :
 
 class BinaryDiffConstraint(Constraint) :
     def utility(self, x) :
-        return int(x[0] != x[1])
+        return 0 if x[0] != x[1] else None
 
 class DiffConstraint(Constraint) :
     def utility(self, x) :
-        return int(len(set(x)) >= len(x))
+        return 0 if len(set(x)) >= len(x) else None
 
 class GraphColoringProblem(Problem) :
     def __init__(self, graph, num_colors = 4) :

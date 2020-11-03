@@ -37,7 +37,11 @@ if __name__ == "__main__" :
     # print(avars)
 
     sub_pros = pro.split(avars = avars)
-    agents = [SyncBTAgent(id = i, pro = sub_pros[i], num_agents = m) for i in range(m)]
+    agents = []
+    for i in range(m) :
+        prev = i - 1 if i > 0 else None
+        next = i + 1 if i < m - 1 else None
+        agents.append(SyncBTAgent(id = i, pro = sub_pros[i], prev = prev, next = next))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -45,6 +49,8 @@ if __name__ == "__main__" :
         print_problem(pro = agent.pro)
         print("-" * 50)
 
-    # Monitor().run(agents = agents, timeout = 5)
+    monitor = Monitor()
+    monitor.run(agents = agents, timeout = 5)
+    print("Monitor.mem = %s" % monitor.mem)
 
     print("Done.")

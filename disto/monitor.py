@@ -33,7 +33,6 @@ class SysMessage(Message) :
 class Monitor(object) :
     def __init__(self) :
         self.running = False
-        self.sys_msgs = []
 
     def run(self, agents, timeout = 60) :
         in_queues = [queue.Queue() for i in range(len(agents))]
@@ -45,7 +44,7 @@ class Monitor(object) :
             process.start()
 
         self.running = True
-        self.sys_msgs = []
+        sys_msgs = []
 
         start_time = time.time()
         while self.running and time.time() - start_time < timeout :
@@ -63,10 +62,13 @@ class Monitor(object) :
                         dest.append(msg.dest)
                     for i in dest :
                         put_one_item_to_queue(in_queues[i], msg)
-                if len(self.sys_msgs) > 0 :
-                    self.handle_sys_msgs()
+            if len(sys_msgs) > 0 :
+                self.handle_sys_msgs()
+                sys_msgs = []
         for process in pool :
             process.join()
 
-    def handle_sys_msgs(self) :
-        self.sys_msgs = []
+    def handle_sys_msgs(self, msgs) :
+        for msg in msgs :
+            if msg.content == None :
+                self.running = False

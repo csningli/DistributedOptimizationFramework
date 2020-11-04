@@ -8,7 +8,8 @@ def run_agent(agent, in_queue, out_queue, timeout = 60) :
     start_time = time.time()
     while time.time() - start_time < timeout :
         in_msg = get_one_item_in_queue(in_queue)
-        result = agent.process(msgs = [in_msg])
+        msgs = [] if in_msg is None else [in_msg]
+        result = agent.process(msgs = msgs)
         out_msgs = result.get("msgs", [])
         if len(out_msgs) > 0 :
             put_items_to_queue(out_queue, items = out_msgs)
@@ -48,14 +49,15 @@ class Monitor(object) :
 
         self.running = True
         sys_msgs = []
-
         start_time = time.time()
-        while self.running and time.time() - start_time < timeout :
+        while self.running == True and time.time() - start_time < timeout :
             for i, out_queue in enumerate(out_queues) :
                 msg = get_one_item_in_queue(out_queue)
                 if isinstance(msg, SysMessage) :
+                    # print("found msg to monitor from agent %d: %s" % (msg.src, msg.content))
                     sys_msgs.append(msg)
                 elif isinstance(msg, CommMessage) :
+                    # print("found msg to agent %d from agent %d." % (msg.dest, msg.src))
                     dest = []
                     if msg.dest is None :
                         dest = [agent.id for agent in agents if agent.id != msg.src]
@@ -63,8 +65,8 @@ class Monitor(object) :
                         dest = msg.dest
                     else :
                         dest.append(msg.dest)
-                    for i in dest :
-                        put_one_item_to_queue(in_queues[i], msg)
+                    for j in dest :
+                        put_one_item_to_queue(in_queues[j], msg)
             if len(sys_msgs) > 0 :
                 self.handle_sys_msgs(msgs = sys_msgs)
                 sys_msgs = []

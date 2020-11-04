@@ -1,5 +1,5 @@
 
-import numpy as np
+import numpy, copy
 
 class Domain(object) :
     def __init__(self, values) :
@@ -32,31 +32,49 @@ def init_assign(vars, order_list = None) :
 def next_assign(assign, vars, order_list = None) :
     order_list = sorted(list(assign.keys())) if order_list is None else order_list
     order_list.reverse()
-    next = assign
+    next = copy.deepcopy(assign)
     for i, var in enumerate(order_list) :
-        if assign[var] != vars[var].last_value() :
-            assign[var] = vars[var].next_value(assign[var])
+        if next[var] != vars[var].last_value() :
+            next[var] = vars[var].next_value(next[var])
             for j in range(i) :
-                assign[order_list[j]] = vars[order_list[j]].first_value()
-    return assign
+                next[order_list[j]] = vars[order_list[j]].first_value()
+    return next
 
 def cover_cons(cons, assign) :
-    cons = []
+    cover = []
     for con in cons :
-        covered = True
         for var in con.vars :
-            if not next.has_key(var) :
-                covered = False
+            if var not in assign :
+                cover.append(con)
                 break
-        if covered == True :
-            cons.append(con)
-    return cons
+    return cover
+
+def fit_assign_to_con(assign, con) :
+    x = []
+    for var in con.vars :
+        if var in assign :
+            x.append(assign[var])
+        else :
+            x = None
+            break
+    return x
+
+def calc_utility(con, assign) :
+    v = 0
+    x = fit_assign_to_con(assign, con)
+    if x is not None :
+        v = con.utility(x)
+    return v
 
 def total_utility(cons, assign) :
-    u = None
+    u = 0
     for con in cons :
-        v = con.fit(assign)
-        u = None if v is None else u + v
+        v = calc_utility(con, assign)
+        if v is None :
+            u = None
+            break
+        else :
+            u += v
     return u
 
 def fix_assign(pro, assign, order_list = None) :
@@ -64,14 +82,15 @@ def fix_assign(pro, assign, order_list = None) :
     fixed = assign
     cons = cover_cons(pro.cons, assign)
     u = total_utility(cons, fixed)
+    # print(pro.cons, cons, assign, u)
     while u is None :
         next = next_assign(fixed, pro.vars, order_list)
         if next == fixed :
             break
         else :
             fixed = next
-        u = total_utility(cons, fixed)
-    return fixed
+            u = total_utility(cons, fixed)
+    return fixed, u
 
 class Constraint(object) :
     def __init__(self, vars) :
@@ -79,6 +98,13 @@ class Constraint(object) :
 
     def info(self) :
         return f"<<Disto.{type(self).__name__} num_vars = {len(self.vars)}>>"
+
+    def valid(self, x) :
+        v = True
+        for var in self.vars :
+            if var not in x :
+                v = False
+        return v
 
     def utility(self, x) :
         return 0

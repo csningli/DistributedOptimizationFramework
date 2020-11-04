@@ -31,12 +31,12 @@ def init_assign(vars, order_list = None) :
 
 def next_assign(assign, vars, order_list = None) :
     order_list = sorted(list(assign.keys())) if order_list is None else order_list
-    order_list.reverse()
     next = copy.deepcopy(assign)
-    for i, var in enumerate(order_list) :
+    for i in range(len(order_list) - 1, 0) :
+        var = order_list[i]
         if next[var] != vars[var].last_value() :
             next[var] = vars[var].next_value(next[var])
-            for j in range(i) :
+            for j in range(i + 1, len(order_list)) :
                 next[order_list[j]] = vars[order_list[j]].first_value()
     return next
 
@@ -44,7 +44,7 @@ def cover_cons(cons, assign) :
     cover = []
     for con in cons :
         for var in con.vars :
-            if var not in assign :
+            if var in assign :
                 cover.append(con)
                 break
     return cover

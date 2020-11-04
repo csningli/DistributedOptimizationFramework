@@ -31,9 +31,10 @@ class SyncBTAgent(Agent) :
             if self.prev is None and self.assign[self.sorted_vars[0]] is None :
                 self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
                 self.assgin, u = fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                print(self.assign, u)
                 if u is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
-                    print("agent %d send msg to monitor:", self.id, self.assign, u)
+                    print("agent %d send msg to monitor." % self.id)
                 else :
                     if self.next is None :
                         result["msgs"].append(SysMessage(src = self.id, content = cpa))

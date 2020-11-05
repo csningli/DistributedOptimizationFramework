@@ -32,12 +32,13 @@ def init_assign(vars, order_list = None) :
 def next_assign(assign, vars, order_list = None) :
     order_list = sorted(list(assign.keys())) if order_list is None else order_list
     next = copy.deepcopy(assign)
-    for i in range(len(order_list) - 1, 0) :
+    for i in range(len(order_list) - 1, -1, -1) :
         var = order_list[i]
         if next[var] != vars[var].last_value() :
             next[var] = vars[var].next_value(next[var])
             for j in range(i + 1, len(order_list)) :
                 next[order_list[j]] = vars[order_list[j]].first_value()
+            break
     return next
 
 def cover_cons(cons, assign) :
@@ -79,10 +80,9 @@ def total_utility(cons, assign) :
 
 def fix_assign(pro, assign, order_list = None) :
     order_list = sorted(list(pro.vars.keys())) if order_list is None else order_list
-    fixed = assign
+    fixed = copy.deepcopy(assign)
     cons = cover_cons(pro.cons, assign)
     u = total_utility(cons, fixed)
-    # print(pro.cons, cons, assign, u)
     while u is None :
         next = next_assign(fixed, pro.vars, order_list)
         if next == fixed :

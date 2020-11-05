@@ -54,10 +54,8 @@ class Monitor(object) :
             for i, out_queue in enumerate(out_queues) :
                 msg = get_one_item_in_queue(out_queue)
                 if isinstance(msg, SysMessage) :
-                    # print("found msg to monitor from agent %d: %s" % (msg.src, msg.content))
                     sys_msgs.append(msg)
                 elif isinstance(msg, CommMessage) :
-                    # print("found msg to agent %d from agent %d." % (msg.dest, msg.src))
                     dest = []
                     if msg.dest is None :
                         dest = [agent.id for agent in agents if agent.id != msg.src]
@@ -70,7 +68,9 @@ class Monitor(object) :
             if len(sys_msgs) > 0 :
                 self.handle_sys_msgs(msgs = sys_msgs)
                 sys_msgs = []
+
         for process in pool :
+            process.terminate()
             process.join()
 
     def handle_sys_msgs(self, msgs) :

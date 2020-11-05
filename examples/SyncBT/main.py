@@ -50,7 +50,9 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    monitor.run(agents = agents, timeout = 5)
+    monitor.run(agents = agents, timeout = 10)
     print("Monitor.mem = %s" % monitor.mem)
+    for agent in agents :
+        agent.dump_logs(dir = "logs")
 
     print("Done.")

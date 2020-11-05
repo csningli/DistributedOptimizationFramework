@@ -12,6 +12,7 @@ scripts/*.eps
 scripts/*.png
 archived/
 doc/
+logs/
 pydist/__pycache__/
 
 # Vim temporaries

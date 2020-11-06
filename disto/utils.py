@@ -1,5 +1,5 @@
 
-import os, datetime, queue
+import os, datetime, json, queue
 
 def get_current_time() :
     return datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")
@@ -46,3 +46,31 @@ def print_problem(pro) :
     print("Constraints:")
     for con in pro.cons :
         print("%s : %s" %(con.info(), con.vars))
+
+def view_logs(log_dir, style = "agentbase") :
+    # style in one of "timeline", "agentbase"
+    logs = {}
+    ids = []
+    if not os.path.isdir(log_dir) :
+        print("cannot find %s." % log_dir)
+    else :
+        for file in os.listdir(log_dir) :
+            name, ext = os.path.splitext(file)
+            if ext == ".log" :
+                ids.append(name.split("_")[-1])
+                logs[ids[-1]] = json.load(open(os.path.join(log_dir, file)))
+    if style == "agentbase" :
+        for id in sorted(ids) :
+            for line in logs[id] :
+                print("[agent_%s] %s" % (id, line))
+    elif style == "timeline" :
+        sorted_logs = []
+        for id in sorted(ids) :
+            for line in logs[id] :
+                timelabel = '/'.join(line.split(' ')[:2])[1:-1]
+                sorted_logs.append((timelabel, "[agent_%s] %s" % (id, line)))
+        sorted_logs = sorted(sorted_logs, key = lambda x: x[0])
+        for item in sorted_logs:
+            print(item[1])
+    else :
+        print("Invalid style: %s." % style)

@@ -13,6 +13,9 @@ def run_agent(agent, in_queue, out_queue, timeout = 60) :
         out_msgs = result.get("msgs", [])
         if len(out_msgs) > 0 :
             put_items_to_queue(out_queue, items = out_msgs)
+        if agent.log_filepath != "" and len(agent.logs) > 0 :
+            agent.dump_logs()
+            agent.logs = []
 
 class Message(object) :
     def __init__(self, src, dest, content) :
@@ -68,10 +71,13 @@ class Monitor(object) :
             if len(sys_msgs) > 0 :
                 self.handle_sys_msgs(msgs = sys_msgs)
                 sys_msgs = []
+        finish_time = time.time()
 
         for process in pool :
             process.terminate()
             process.join()
+            
+        return finish_time - start_time
 
     def handle_sys_msgs(self, msgs) :
         for msg in msgs :

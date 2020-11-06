@@ -6,17 +6,20 @@ from disto.monitor import *
 from disto.utils import *
 
 class Agent(object) :
-    def __init__(self, id, pro, log_dir = ".") :
+    def __init__(self, id, pro, log_dir = "") :
         self.id = id
         self.pro = pro
         self.assign = {var : None for var in self.pro.vars.keys()}
         self.logs = []
+        self.log_filepath = ""
+        if log_dir != "" :
+            self.log_filepath = os.path.join(log_dir, "%s-agent_%d.log" % (get_datetime_stamp(), self.id))
 
     def info(self) :
         return f"<<Disto.{type(self).__name__} id = {self.id}; pro = {True if self.pro is not None else False}>>"
 
     def log(self, line) :
-        self.logs.append("[%s]%s" % (get_current_time(), line))
+        self.logs.append("[%s] %s" % (get_current_time(), line))
 
     def log_msg(self, label, msg) :
         self.log("%s/%s/%s/%s/%s" % (label, type(msg).__name__, msg.src, msg.dest, msg.content))
@@ -27,12 +30,12 @@ class Agent(object) :
 
     def dump_logs(self) :
         filename = "%s-agent_%d.log" % (get_datetime_stamp(), self.id)
-        json.dump(self.logs, open(os.path.join(self.log_dir, filename), 'w'))
+        json.dump(self.logs, open(self.log_filepath, 'a'))
 
 
 class SyncBTAgent(Agent) :
-    def __init__(self, id, pro, prev, next) :
-        super(SyncBTAgent, self).__init__(id = int(id), pro = pro)
+    def __init__(self, id, pro, prev, next, log_dir = "") :
+        super(SyncBTAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.prev = prev
         self.next = next
         self.sorted_vars = sorted(list(self.pro.vars.keys()))

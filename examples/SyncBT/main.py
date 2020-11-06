@@ -1,11 +1,11 @@
 
-import math
+import os, math
 import networkx as nx
 
 from disto.problem import GraphColoringProblem
 from disto.agent import SyncBTAgent
 from disto.monitor import Monitor
-from disto.utils import print_problem
+from disto.utils import print_problem, get_datetime_stamp, view_logs
 
 # In this example, SyncBT (Makoto Yokoo and Toru Ishida, "The Distributed
 # Constraint Satisfaction Problem: Formalization and Algorithms") is used
@@ -38,10 +38,13 @@ if __name__ == "__main__" :
 
     sub_pros = pro.split(avars = avars)
     agents = []
+    log_dir = "logs/%s" % get_datetime_stamp()
+    if not os.path.isdir(log_dir) :
+        os.mkdir(log_dir)
     for i in range(m) :
         prev = i - 1 if i > 0 else None
         next = i + 1 if i < m - 1 else None
-        agents.append(SyncBTAgent(id = i, pro = sub_pros[i], prev = prev, next = next))
+        agents.append(SyncBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, prev = prev, next = next))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -50,9 +53,10 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    monitor.run(agents = agents, timeout = 10)
-    print("Monitor.mem = %s" % monitor.mem)
-    for agent in agents :
-        agent.dump_logs(dir = "logs")
-
+    time_cost = monitor.run(agents = agents, timeout = 10)
+    print("Time cost : %s" % time_cost)
+    print("-" * 50)
+    print("Monitor.mem : %s" % monitor.mem)
+    print("-" * 50)
+    view_logs(log_dir = log_dir, style = "timeline")
     print("Done.")

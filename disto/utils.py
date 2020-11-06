@@ -58,17 +58,18 @@ def view_logs(log_dir, style = "agentbase") :
             name, ext = os.path.splitext(file)
             if ext == ".log" :
                 ids.append(name.split("_")[-1])
-                logs[ids[-1]] = json.load(open(os.path.join(log_dir, file)))
+                with open(os.path.join(log_dir, file), 'r') as f :
+                    logs[ids[-1]] = f.readlines()
     if style == "agentbase" :
         for id in sorted(ids) :
             for line in logs[id] :
-                print("[agent_%s] %s" % (id, line))
+                print("[agent_%s] %s" % (id, line.strip()))
     elif style == "timeline" :
         sorted_logs = []
         for id in sorted(ids) :
             for line in logs[id] :
                 timelabel = '/'.join(line.split(' ')[:2])[1:-1]
-                sorted_logs.append((timelabel, "[agent_%s] %s" % (id, line)))
+                sorted_logs.append((timelabel, "[agent_%s] %s" % (id, line.strip())))
         sorted_logs = sorted(sorted_logs, key = lambda x: x[0])
         for item in sorted_logs:
             print(item[1])

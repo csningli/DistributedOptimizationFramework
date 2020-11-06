@@ -1,5 +1,5 @@
 
-import os, copy, json, numpy
+import os, copy, numpy
 
 from disto.problem import *
 from disto.monitor import *
@@ -30,8 +30,8 @@ class Agent(object) :
 
     def dump_logs(self) :
         filename = "%s-agent_%d.log" % (get_datetime_stamp(), self.id)
-        json.dump(self.logs, open(self.log_filepath, 'a'))
-
+        with open(self.log_filepath, 'a') as f :
+            f.writelines([line + "\n" for line in self.logs])
 
 class SyncBTAgent(Agent) :
     def __init__(self, id, pro, prev, next, log_dir = "") :

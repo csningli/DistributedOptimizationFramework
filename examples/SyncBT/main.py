@@ -32,7 +32,7 @@ if __name__ == "__main__" :
     print_problem(pro = pro)
     print("-" * 50)
 
-    m = 3 # number of the agents
+    m = 2 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
     # print(avars)
 

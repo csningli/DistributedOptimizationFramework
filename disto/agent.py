@@ -88,14 +88,13 @@ class SyncBTAgent(Agent) :
         return result
 
 class AsynBTAgent(Agent) :
-    def __init__(self, id, pro, last_id) :
-        super(AsynBTAgent, self).__init__(id = int(id), pro = pro)
-        self.last_id = last_id
+    def __init__(self, id, pro, prev, next, log_dir = "") :
+        super(AsynBTAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
+        self.prev = prev
+        self.next = next
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.assign = {var : None for var in self.sorted_vars}
-        self.status = "created"
+        self.cpa = {}
 
     def process(self, msgs) :
-        msgs = []
-        # if None in self.assign.values() :
-        return {"msgs" : msgs}
+        result = {"msgs" : []}
+        return result

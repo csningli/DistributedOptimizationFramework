@@ -12,7 +12,7 @@ from disto.utils import print_problem, get_datetime_stamp, view_logs
 # to solve the graph coloring problem, which is modeled in a DCSP form.
 
 if __name__ == "__main__" :
-    n = 10 # number of variables
+    n = 6 # number of variables
 
     # graph = nx.generators.random_graphs.fast_gnp_random_graph(n = n, p = 0.6)
 
@@ -20,7 +20,7 @@ if __name__ == "__main__" :
     for i in range(n) :
         graph.add_node(str(i))
 
-    d = 3
+    d = 2
     for i in range(n) :
         for j in range(1, d + 1) :
             graph.add_edge(str(i), str((i + j) % n))

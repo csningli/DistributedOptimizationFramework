@@ -7,8 +7,7 @@ from disto.utils import *
 def run_agent(agent, in_queue, out_queue, timeout = 60) :
     start_time = time.time()
     while time.time() - start_time < timeout :
-        in_msg = get_one_item_in_queue(in_queue)
-        msgs = [] if in_msg is None else [in_msg]
+        msgs = get_all_items_in_queue(in_queue)
         result = agent.process(msgs = msgs)
         out_msgs = result.get("msgs", [])
         if len(out_msgs) > 0 :
@@ -76,7 +75,7 @@ class Monitor(object) :
         for process in pool :
             process.terminate()
             process.join()
-            
+
         return finish_time - start_time
 
     def handle_sys_msgs(self, msgs) :

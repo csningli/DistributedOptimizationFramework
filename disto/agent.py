@@ -111,6 +111,7 @@ class AsynBTAgent(Agent) :
                 for msg in msgs :
                     self.log_msg("receive", msg)
                     assign_updated = False
+                    
                     if isinstance(msg, OkMessage) and msg.src < self.id :
                         self.view.update(msg.content)
                         if self.assign[self.sorted_vars[0]] is None :
@@ -138,7 +139,7 @@ class AsynBTAgent(Agent) :
                     elif isinstance(msg, LinkMessage) and msg.src > self.id :
                         if msg.src not in self.outgings :
                             self.outgings.append(msg.src)
-                            
+
                     if assign_updated == True :
                         cpa = copy.deepcopy(self.view)
                         cpa.update(self.assign)

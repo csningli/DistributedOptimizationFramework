@@ -111,7 +111,7 @@ class AsynBTAgent(Agent) :
                 for msg in msgs :
                     self.log_msg("receive", msg)
                     assign_updated = False
-                    
+
                     if isinstance(msg, OkMessage) and msg.src < self.id :
                         self.view.update(msg.content)
                         if self.assign[self.sorted_vars[0]] is None :
@@ -129,9 +129,9 @@ class AsynBTAgent(Agent) :
                             result["msgs"].append(LinkMessage(src = self.id, dest = id, content = None))
                         consistent = True
                         for var, value in msg.content.items() :
-                            if (var not in self.vars and var not in self.view) or
-                                    (var in self.vars and value != self.assign[var]) or
-                                    (var in self.view and value != self.view[var]) :
+                            if (var not in self.vars and var not in self.view) \
+                                    or (var in self.vars and value != self.assign[var]) \
+                                    or (var in self.view and value != self.view[var]) :
                                 consistent = False
                                 break
                         if consistent == True :

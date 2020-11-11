@@ -1,6 +1,8 @@
 
 import numpy, copy
 
+from disto.utils import *
+
 class Domain(object) :
     def __init__(self, values) :
         self.values = values

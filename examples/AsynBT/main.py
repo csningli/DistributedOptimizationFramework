@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import GraphColoringProblem
 from disto.agent import AsynBTAgent
 from disto.monitor import Monitor
-from disto.utils import print_problem, get_datetime_stamp, view_logs
+from disto.utils import get_var_mapping, print_problem, get_datetime_stamp, view_logs
 
 # In this example, AsynBT (Makoto Yokoo and Toru Ishida, "The Distributed
 # Constraint Satisfaction Problem: Formalization and Algorithms") is used
@@ -43,16 +43,16 @@ if __name__ == "__main__" :
     if not os.path.isdir(log_dir) :
         os.mkdir(log_dir)
 
-    outgoings = {str(i) : [] for i in range(m)}
+    outgoings = {i : [] for i in range(m)}
     for con in pro.cons :
-        ids = set([var_mapping(var) for var in con.vars])
+        ids = set([var_mapping[var] for var in con.vars])
         min_id = min(ids)
         for id in ids :
-            if id != min_id and min_id not in outgoings[id] : 
+            if id != min_id and min_id not in outgoings[id] :
                 outgoings[id].append(min_id)
 
     for i in range(m) :
-        agents.append(AsyncBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[str(i)], var_mapping = var_mapping))
+        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[str(i)], var_mapping = var_mapping))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

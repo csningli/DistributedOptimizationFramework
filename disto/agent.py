@@ -138,6 +138,7 @@ class AsynBTAgent(Agent) :
                     elif isinstance(msg, LinkMessage) and msg.src > self.id :
                         if msg.src not in self.outgings :
                             self.outgings.append(msg.src)
+                            
                     if assign_updated == True :
                         cpa = copy.deepcopy(self.view)
                         cpa.update(self.assign)

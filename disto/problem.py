@@ -148,6 +148,7 @@ class Problem(object) :
         split the problem into several sub-problems.
         -------------------------
         avars : a list, where the i-th item is the list of variables assigned to the i-th agent
+        con_host : a function return variables whose host agents will know the given constraint
         '''
         var_mapping = get_var_mapping(avars = avars)
         acons = [[] for i in range(len(avars))]

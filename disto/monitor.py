@@ -31,6 +31,18 @@ class CommMessage(Message) :
     def __init__(self, src, dest, content) :
         super(CommMessage, self).__init__(src = src, dest = dest, content = content)
 
+class OkMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(OkMessage, self).__init__(src = src, dest = dest, content = content)
+
+class NogoodMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(NogoodMessage, self).__init__(src = src, dest = dest, content = content)
+
+class LinkMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(LinkMessage, self).__init__(src = src, dest = dest, content = content)
+
 class SysMessage(Message) :
     def __init__(self, src, content) :
         super(SysMessage, self).__init__(src = src, dest = None, content = content)

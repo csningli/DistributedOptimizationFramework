@@ -34,17 +34,25 @@ if __name__ == "__main__" :
 
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
+    var_mapping = get_var_mapping(avars = avars)
     # print(avars)
 
-    sub_pros = pro.split(avars = avars)
+    sub_pros = pro.split(avars = avars, con_host = lambda c: [min(c.vars)])
     agents = []
     log_dir = "logs/%s" % get_datetime_stamp()
     if not os.path.isdir(log_dir) :
         os.mkdir(log_dir)
+
+    outgoings = {str(i) : [] for i in range(m)}
+    for con in pro.cons :
+        ids = set([var_mapping(var) for var in con.vars])
+        min_id = min(ids)
+        for id in ids :
+            if id != min_id and min_id not in outgoings[id] : 
+                outgoings[id].append(min_id)
+
     for i in range(m) :
-        prev = i - 1 if i > 0 else None
-        next = i + 1 if i < m - 1 else None
-        agents.append(AsyncBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, prev = prev, next = next))
+        agents.append(AsyncBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[str(i)], var_mapping = var_mapping))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

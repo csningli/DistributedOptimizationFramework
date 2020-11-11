@@ -75,3 +75,10 @@ def view_logs(log_dir, style = "agentbase") :
             print(item[1])
     else :
         print("Invalid style: %s." % style)
+
+def get_var_mapping(avars) :
+    var_mapping = {}
+    for i, vars in enumerate(avars) :
+        for var in vars :
+           var_mapping[var] = i
+    return var_mapping

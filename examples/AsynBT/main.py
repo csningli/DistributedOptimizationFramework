@@ -1,5 +1,5 @@
 
-import os, math
+import os, math, functools
 import networkx as nx
 
 from disto.problem import GraphColoringProblem
@@ -37,7 +37,11 @@ if __name__ == "__main__" :
     var_mapping = get_var_mapping(avars = avars)
     # print(avars)
 
-    sub_pros = pro.split(avars = avars, con_host = lambda c: [max(c.vars)])
+    def con_host(con, var_mapping) :
+        ids = set([var_mapping[var] for var in con.vars])
+        return [max(ids)]
+
+    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_mapping = var_mapping))
     agents = []
     log_dir = "logs/%s" % get_datetime_stamp()
     if not os.path.isdir(log_dir) :
@@ -56,17 +60,17 @@ if __name__ == "__main__" :
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
-        print("* Sub-Problem : %d *" % i)
+        print("* Sub-Problem: %d *" % i)
         print_problem(pro = agent.pro)
         print("-" * 50)
 
     monitor = Monitor()
-    print("Running output")
+    print("Running output:")
     time_cost = monitor.run(agents = agents, timeout = 1)
     print("-" * 50)
-    print("Time cost : %s" % time_cost)
+    print("Time cost: %s" % time_cost)
     print("-" * 50)
-    print("Monitor.mem : %s" % monitor.mem)
+    print("Monitor.mem: %s" % monitor.mem)
     print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)

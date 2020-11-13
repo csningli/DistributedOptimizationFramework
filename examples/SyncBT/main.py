@@ -48,15 +48,15 @@ if __name__ == "__main__" :
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
-        print("* Sub-Problem : %d *" % i)
+        print("* Sub-Problem: %d *" % i)
         print_problem(pro = agent.pro)
         print("-" * 50)
 
     monitor = Monitor()
     time_cost = monitor.run(agents = agents, timeout = 1)
-    print("Time cost : %s" % time_cost)
+    print("Time cost: %s" % time_cost)
     print("-" * 50)
-    print("Monitor.mem : %s" % monitor.mem)
+    print("Monitor.mem: %s" % monitor.mem)
     print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)

@@ -153,7 +153,7 @@ class Problem(object) :
         var_mapping = get_var_mapping(avars = avars)
         acons = [[] for i in range(len(avars))]
         for con in self.cons :
-            ids = [var_mapping(var) for var in cons.vars] if con_host is None else con_host(con)
+            ids = set([var_mapping[var] for var in con.vars]) if con_host is None else con_host(con)
             for id in ids :
                 acons[id].append(con)
         pros = [Problem(vars = {var : self.vars[var] for var in avars[i]}, cons = acons[i]) for i in range(len(avars))]

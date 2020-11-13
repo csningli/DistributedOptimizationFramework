@@ -16,7 +16,7 @@ class Agent(object) :
             self.log_filepath = os.path.join(log_dir, "%s-agent_%d.log" % (get_datetime_stamp(), self.id))
 
     def info(self) :
-        return f"<<Disto.{type(self).__name__} id = {self.id}; pro = {True if self.pro is not None else False}>>"
+        return f"<<Disto.{type(self).__name__} id = {self.id}; pro = {type(self.pro).__name__}>>"
 
     def log(self, line) :
         self.logs.append("[%s] %s" % (get_current_time(), line))

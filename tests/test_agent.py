@@ -2,18 +2,19 @@
 import sys, os, time
 import doctest
 
+from disto.problem import Problem
 from disto.agent import Agent
 
 def test_agent() :
     '''
     >>> test_agent()
-    Agent: <<Disto.Agent id = 0; pro = False>>
-    agent.process(msgs = [None]) -> msgs: {'msgs': []}
+    Agent: <<Disto.Agent id = 0; pro = Problem>>
+    agent.process(msgs = [None]) -> result: {'msgs': []}
     '''
-    agent = Agent(id = "0", pro = None)
+    agent = Agent(id = "0", pro = Problem(vars = {"0" : None}, cons = []))
     print(f"Agent: {agent.info()}")
-    msgs = agent.process(msgs = [None])
-    print(f"agent.process(msgs = [None]) -> msgs: {msgs}")
+    result = agent.process(msgs = [None])
+    print(f"agent.process(msgs = [None]) -> result: {result}")
 
 if __name__ == '__main__' :
     result = doctest.testmod()

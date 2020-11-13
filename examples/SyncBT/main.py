@@ -59,4 +59,5 @@ if __name__ == "__main__" :
     print("Monitor.mem : %s" % monitor.mem)
     print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
+    print("-" * 50)
     print("Done.")

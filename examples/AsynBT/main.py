@@ -37,7 +37,7 @@ if __name__ == "__main__" :
     var_mapping = get_var_mapping(avars = avars)
     # print(avars)
 
-    sub_pros = pro.split(avars = avars, con_host = lambda c: [min(c.vars)])
+    sub_pros = pro.split(avars = avars, con_host = lambda c: [max(c.vars)])
     agents = []
     log_dir = "logs/%s" % get_datetime_stamp()
     if not os.path.isdir(log_dir) :
@@ -46,13 +46,13 @@ if __name__ == "__main__" :
     outgoings = {i : [] for i in range(m)}
     for con in pro.cons :
         ids = set([var_mapping[var] for var in con.vars])
-        min_id = min(ids)
+        max_id = max(ids)
         for id in ids :
-            if id != min_id and min_id not in outgoings[id] :
-                outgoings[id].append(min_id)
+            if id != max_id and max_id not in outgoings[id] :
+                outgoings[id].append(max_id)
 
     for i in range(m) :
-        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[str(i)], var_mapping = var_mapping))
+        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[i], var_mapping = var_mapping))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -61,10 +61,13 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
+    print("Running output")
     time_cost = monitor.run(agents = agents, timeout = 1)
+    print("-" * 50)
     print("Time cost : %s" % time_cost)
     print("-" * 50)
     print("Monitor.mem : %s" % monitor.mem)
     print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
+    print("-" * 50)
     print("Done.")

@@ -117,21 +117,19 @@ class AsynBTAgent(Agent) :
                         self.view.update(msg.content)
                         check_view_assign_consistent = True
                     elif isinstance(msg, NogoodMessage) and msg.src > self.id :
-                        vars = list(self.content.keys())
-                        forbidden_con = ForbiddenConstraint(vars = vars, values = [self.content[var] for var in vars])
+                        vars = list(msg.content.keys())
+                        forbidden_con = ForbiddenConstraint(vars = vars, values = [msg.content[var] for var in vars])
                         self.pro.cons.append(forbidden_con)
                         ids = []
                         for var in vars :
-                            id = var_mapping(var)
-                            if var not in self.view and id not in ids :
+                            id = self.var_mapping[var]
+                            if var not in self.view and var not in self.pro.vars and id not in ids :
                                 ids.append(id)
                         for id in ids :
                             result["msgs"].append(LinkMessage(src = self.id, dest = id, content = None))
-                        is_view_context_consistent = True
+                        is_view_assign_consistent = True
                         for var, value in msg.content.items() :
-                            if (var not in self.vars and var not in self.view) \
-                                    or (var in self.vars and value != self.assign[var]) \
-                                    or (var in self.view and value != self.view[var]) :
+                            if (var in self.pro.vars and value != self.assign[var]) or (var in self.view and value != self.view[var]) :
                                 is_view_assign_consistent = False
                                 break
                         if is_view_assign_consistent == True :
@@ -148,11 +146,15 @@ class AsynBTAgent(Agent) :
                         cpa, u, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
                         if u is None :
                             self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                            max_var = max([max([var for var in con.vars if var not in self.sorted_vars]) for con in violated])
-                            id = self.var_mapping[max_var]
+                            ids = []
+                            for con in violated :
+                                vars = [var for var in con.vars if var not in self.pro.vars]
+                                if len(vars) > 0 :
+                                    ids.append(max([self.var_mapping[var] for var in vars]))
+                            id = max(ids)
                             context = {}
-                            for con in vioalted :
-                                context.update({var : self.view[var] for var in con.vars if var not in self.vars})
+                            for con in violated :
+                                context.update({var : self.view[var] for var in con.vars if var not in self.pro.vars})
                             result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = context))
                         else :
                             for var in self.assign.keys() :

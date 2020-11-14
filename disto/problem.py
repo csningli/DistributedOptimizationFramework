@@ -88,14 +88,16 @@ def fix_assign(pro, assign, order_list = None) :
     order_list = sorted(list(pro.vars.keys())) if order_list is None else order_list
     fixed = copy.deepcopy(assign)
     cons = cover_cons(pro.cons, assign)
-    u, violated = total_utility(cons, fixed)
+    violated = []
+    u, v = total_utility(cons, fixed)
     while u is None :
+        violated += v
         next = next_assign(fixed, pro.vars, order_list)
         if next == fixed :
             break
         else :
             fixed = next
-            u = total_utility(cons, fixed)
+            u, v = total_utility(cons, fixed)
     return fixed, u, violated
 
 class Constraint(object) :

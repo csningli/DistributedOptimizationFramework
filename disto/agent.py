@@ -46,9 +46,9 @@ class SyncBTAgent(Agent) :
         if len(self.sorted_vars) > 0 :
             if self.prev is None and self.assign[self.sorted_vars[0]] is None :
                 self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                self.assign, u, violated = fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                self.assign, cost, violated = fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
                 self.log("start/init cpa")
-                if u is None :
+                if cost is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     if self.next is None :
@@ -66,8 +66,8 @@ class SyncBTAgent(Agent) :
                 elif msg.src == self.next :
                     self.assign = next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
                 cpa = {**self.cpa, **self.assign}
-                cpa, u, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
-                if u is None :
+                cpa, cost, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                if cost is None :
                     self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
                     if self.prev is None :
                         result["msgs"].append(SysMessage(src = self.id, content = None))
@@ -99,9 +99,9 @@ class AsynBTAgent(Agent) :
         if len(self.sorted_vars) > 0 :
             if self.assign[self.sorted_vars[0]] is None :
                 self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                self.assign, u, violated = fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                self.assign, cost, violated = fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
                 self.log("init/%s" % self.assign)
-                if u is None :
+                if cost is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     for id in self.outgoings :
@@ -129,9 +129,9 @@ class AsynBTAgent(Agent) :
                         if msg.content == cpa :
                             cpa.update(next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
                 if cpa != {**self.view, **self.assign} :
-                    cpa, u, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                    cpa, cost, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
                     self.view.update({var : cpa[var] for var in cpa.keys() if var not in self.assign})
-                    if u is None :
+                    if cost is None :
                         self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
                         ids = []
                         for con in violated :

@@ -62,43 +62,43 @@ def fit_assign_to_con(assign, con) :
             break
     return x
 
-def calc_utility(con, assign) :
-    v = 0
+def calc_cost(con, assign) :
+    cost = 0
     x = fit_assign_to_con(assign, con)
     if x is not None :
-        v = con.utility(x)
-    return v
+        cost = con.cost(x)
+    return cost
 
-def total_utility(cons, assign) :
-    u = 0
+def total_cost(cons, assign) :
+    cost = 0
     violated = []
     for con in cons :
-        v = calc_utility(con, assign)
-        if v is None :
-            u = None
+        c = calc_cost(con, assign)
+        if c is None :
+            cost = None
             violated.append(con)
             break
         else :
-            u += v
-    if u is not None :
+            cost += c
+    if cost is not None :
         violated = []
-    return u, violated
+    return cost, violated
 
 def fix_assign(pro, assign, order_list = None) :
     order_list = sorted(list(pro.vars.keys())) if order_list is None else order_list
     fixed = copy.deepcopy(assign)
     cons = cover_cons(pro.cons, assign)
     violated = []
-    u, v = total_utility(cons, fixed)
-    while u is None :
+    cost, v = total_cost(cons, fixed)
+    while cost is None :
         violated += [con for con in v if con not in violated]
         next = next_assign(fixed, pro.vars, order_list)
         if next == fixed :
             break
         else :
             fixed = next
-            u, v = total_utility(cons, fixed)
-    return fixed, u, violated
+            cost, v = total_cost(cons, fixed)
+    return fixed, cost, violated
 
 class Constraint(object) :
     def __init__(self, vars) :
@@ -114,15 +114,15 @@ class Constraint(object) :
                 v = False
         return v
 
-    def utility(self, x) :
+    def cost(self, x) :
         return 0
 
 class BinaryDiffConstraint(Constraint) :
-    def utility(self, x) :
+    def cost(self, x) :
         return 0 if x[0] != x[1] else None
 
 class DiffConstraint(Constraint) :
-    def utility(self, x) :
+    def cost(self, x) :
         return 0 if len(set(x)) >= len(x) else None
 
 class ForbiddenConstraint(Constraint) :
@@ -130,7 +130,7 @@ class ForbiddenConstraint(Constraint) :
         super(ForbiddenConstraint, self).__init__(vars = vars)
         self.values = values
 
-    def utility(self, x) :
+    def cost(self, x) :
         return 0 if x not in self.values else None
 
 class Problem(object) :

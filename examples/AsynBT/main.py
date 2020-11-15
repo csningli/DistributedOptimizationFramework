@@ -2,7 +2,7 @@
 import os, math, functools
 import networkx as nx
 
-from disto.problem import GraphColoringProblem
+from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import AsynBTAgent
 from disto.monitor import Monitor
 from disto.utils import get_var_mapping, print_problem, get_datetime_stamp, view_logs
@@ -76,6 +76,8 @@ if __name__ == "__main__" :
     for assign in monitor.mem :
         final.update(assign)
     print("Final: %s" % final)
+    cost, _ = total_cost(cons = pro.cons, assign = final)
+    print("Cost: %s" % cost)
     print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)

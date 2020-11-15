@@ -152,8 +152,7 @@ class AsynBTAgent(Agent) :
                                 self.assign[var] = cpa[var]
                             for id in self.outgoings :
                                 result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
-                        else :
-                            result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
+                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

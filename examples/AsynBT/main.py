@@ -65,9 +65,9 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    print("Running output:")
+    # print("Running output:")
     time_cost = monitor.run(agents = agents, timeout = 1)
-    print("-" * 50)
+    # print("-" * 50)
     print("Time cost: %s" % time_cost)
     print("-" * 50)
     print("Monitor.mem: %s" % monitor.mem)

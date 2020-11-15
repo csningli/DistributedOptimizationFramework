@@ -64,6 +64,7 @@ class Monitor(object) :
         self.running = True
         sys_msgs = []
         start_time = time.time()
+        finish_time = None
         while self.running == True and time.time() - start_time < timeout :
             for i, out_queue in enumerate(out_queues) :
                 msg = get_one_item_in_queue(out_queue)
@@ -80,9 +81,10 @@ class Monitor(object) :
                     for j in dest :
                         put_one_item_to_queue(in_queues[j], msg)
             if len(sys_msgs) > 0 :
+                finish_time = time.time()
                 self.handle_sys_msgs(msgs = sys_msgs)
                 sys_msgs = []
-        finish_time = time.time()
+        finish_time = time.time() if finish_time is None else finish_time
 
         for process in pool :
             process.terminate()

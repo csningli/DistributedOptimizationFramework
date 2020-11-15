@@ -138,7 +138,8 @@ class AsynBTAgent(Agent) :
                             vars = [var for var in con.vars if var not in self.assign]
                             if len(vars) > 0 :
                                 ids.append(max([self.var_mapping[var] for var in vars]))
-                        if len(ids) < 1 : # in such case, there is no solution for the DCSP associated with the subtree that roots at current node.
+                        if len(ids) < 1 :
+                            # in such case, there is no solution for the DCSP associated with the subtree that roots at current node.
                             result["msgs"].append(SysMessage(src = self.id, content = None))
                         else :
                             id = max(ids)

@@ -82,3 +82,11 @@ def get_var_mapping(avars) :
         for var in vars :
            var_mapping[var] = i
     return var_mapping
+
+def check_dict_consitent(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
+    result = True
+    for key, value in d2.items() :
+        if key in d1 and value != d1[key] :
+            result = False
+            break
+    return result

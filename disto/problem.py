@@ -91,7 +91,7 @@ def fix_assign(pro, assign, order_list = None) :
     violated = []
     u, v = total_utility(cons, fixed)
     while u is None :
-        violated += v
+        violated += [con for con in v if con not in violated]
         next = next_assign(fixed, pro.vars, order_list)
         if next == fixed :
             break

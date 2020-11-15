@@ -52,10 +52,10 @@ class SyncBTAgent(Agent) :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     if self.next is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = cpa))
+                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
                         result["msgs"].append(SysMessage(src = self.id, content = None))
                     else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = self.assign))
+                        result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = copy.deepcopy(self.assign)))
             elif len(msgs) > 0 :
                 msg = msgs[0]
                 self.log_msg("receive", msg)
@@ -65,8 +65,7 @@ class SyncBTAgent(Agent) :
                         self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
                 elif msg.src == self.next :
                     self.assign = next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
-                cpa = copy.deepcopy(self.cpa)
-                cpa.update(self.assign)
+                cpa = {**self.cpa, **self.assign}
                 cpa, u, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
                 if u is None :
                     self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
@@ -74,15 +73,15 @@ class SyncBTAgent(Agent) :
                         result["msgs"].append(SysMessage(src = self.id, content = None))
                         self.log_msg("send", result["msgs"][-1])
                     else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.prev, content = cpa))
+                        result["msgs"].append(CommMessage(src = self.id, dest = self.prev, content = copy.deepcopy(cpa)))
                 else :
                     for var in self.assign.keys() :
                         self.assign[var] = cpa[var]
                     if self.next is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = cpa))
+                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
                         result["msgs"].append(SysMessage(src = self.id, content = None))
                     else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = cpa))
+                        result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = copy.deepcopy(cpa)))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
@@ -106,66 +105,55 @@ class AsynBTAgent(Agent) :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     for id in self.outgoings :
-                        result["msgs"].append(OkMessage(src = self.id, dest = id, content = self.assign))
+                        result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
             elif len(msgs) > 0 :
+                cpa = {**self.view, **self.assign}
                 for msg in msgs :
                     self.log_msg("receive", msg)
-                    check_view_assign_consistent = False
-                    is_assign_updated = False
-
-                    if isinstance(msg, OkMessage) and msg.src < self.id :
-                        self.view.update(msg.content)
-                        check_view_assign_consistent = True
-                    elif isinstance(msg, NogoodMessage) and msg.src > self.id :
+                    if isinstance(msg, LinkMessage) and msg.src > self.id and msg.src not in self.outgings :
+                        self.outgings.append(msg.src)
+                    elif isinstance(msg, OkMessage) and msg.src < self.id :
+                        cpa.update(msg.content)
+                for msg in msgs :
+                    if isinstance(msg, NogoodMessage) and msg.src > self.id :
                         vars = list(msg.content.keys())
                         forbidden_con = ForbiddenConstraint(vars = vars, values = [msg.content[var] for var in vars])
                         self.pro.cons.append(forbidden_con)
                         ids = []
                         for var in vars :
                             id = self.var_mapping[var]
-                            if var not in self.view and var not in self.pro.vars and id not in ids :
+                            if var not in self.view and var not in self.assign and id not in ids :
                                 ids.append(id)
                         for id in ids :
                             result["msgs"].append(LinkMessage(src = self.id, dest = id, content = None))
-                        is_view_assign_consistent = True
-                        for var, value in msg.content.items() :
-                            if (var in self.pro.vars and value != self.assign[var]) or (var in self.view and value != self.view[var]) :
-                                is_view_assign_consistent = False
-                                break
-                        if is_view_assign_consistent == True :
-                            self.assign = next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
-                            check_view_assign_consistent = True
-                            is_assign_updated = True
-                    elif isinstance(msg, LinkMessage) and msg.src > self.id :
-                        if msg.src not in self.outgings :
-                            self.outgings.append(msg.src)
-
-                    if check_view_assign_consistent == True :
-                        cpa = copy.deepcopy(self.view)
-                        cpa.update(self.assign)
-                        cpa, u, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
-                        if u is None :
-                            self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                            ids = []
-                            for con in violated :
-                                vars = [var for var in con.vars if var not in self.pro.vars]
-                                if len(vars) > 0 :
-                                    ids.append(max([self.var_mapping[var] for var in vars]))
+                        if msg.content == cpa :
+                            cpa.update(next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
+                if cpa != {**self.view, **self.assign} :
+                    cpa, u, violated = fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                    self.view.update({var : cpa[var] for var in cpa.keys() if var not in self.assign})
+                    if u is None :
+                        self.assign = init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                        ids = []
+                        for con in violated :
+                            vars = [var for var in con.vars if var not in self.assign]
+                            if len(vars) > 0 :
+                                ids.append(max([self.var_mapping[var] for var in vars]))
+                        if len(ids) < 1 : # in such case, there is no solution for the DCSP associated with the subtree that roots at current node.
+                            result["msgs"].append(SysMessage(src = self.id, content = None))
+                        else :
                             id = max(ids)
                             context = {}
                             for con in violated :
-                                context.update({var : self.view[var] for var in con.vars if var not in self.pro.vars})
-                            result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = context))
-                        else :
+                                context.update({var : self.view[var] for var in con.vars if var not in self.assign})
+                            result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(context)))
+                    else :
+                        if check_dict_consitent(self.assign, cpa) == False :
                             for var in self.assign.keys() :
-                                if self.assign[var] != cpa[var] :
-                                    self.assign[var] = cpa[var]
-                                    is_assign_updated = True
-                            if is_assign_updated == True :
-                                for id in self.outgoings :
-                                    result["msgs"].append(OkMessage(src = self.id, dest = id, content = self.assign))
-                            if is_assign_updated == False or len(self.outgoings) < 1 :
-                                result["msgs"].append(SysMessage(src = self.id, content = cpa))
+                                self.assign[var] = cpa[var]
+                            for id in self.outgoings :
+                                result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
+                        else :
+                            result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

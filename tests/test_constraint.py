@@ -8,37 +8,37 @@ def test_constraint() :
     '''
     >>> test_constraint()
     con.vars: ['1', '2', '3']
-    con.utility(x = [1, 2, 3]): 0
+    con.cost(x = [1, 2, 3]): 0
     '''
     con = Constraint(vars = ["1", "2", "3"])
     print(f"con.vars: {con.vars}")
-    print(f"con.utility(x = [1, 2, 3]): {con.utility(x = [1, 2, 3])}")
+    print(f"con.cost(x = [1, 2, 3]): {con.cost(x = [1, 2, 3])}")
 
 def test_diff_constraint() :
     '''
     >>> test_diff_constraint()
     con.vars: ['1', '2', '3']
-    con.utility(x = [1, 1, 1]): None
-    con.utility(x = [1, 2, 1]): None
-    con.utility(x = [1, 2, 3]): 0
+    con.cost(x = [1, 1, 1]): None
+    con.cost(x = [1, 2, 1]): None
+    con.cost(x = [1, 2, 3]): 0
     '''
     con = DiffConstraint(vars = ["1", "2", "3"])
     print(f"con.vars: {con.vars}")
-    print(f"con.utility(x = [1, 1, 1]): {con.utility(x = [1, 1, 1])}")
-    print(f"con.utility(x = [1, 2, 1]): {con.utility(x = [1, 2, 1])}")
-    print(f"con.utility(x = [1, 2, 3]): {con.utility(x = [1, 2, 3])}")
+    print(f"con.cost(x = [1, 1, 1]): {con.cost(x = [1, 1, 1])}")
+    print(f"con.cost(x = [1, 2, 1]): {con.cost(x = [1, 2, 1])}")
+    print(f"con.cost(x = [1, 2, 3]): {con.cost(x = [1, 2, 3])}")
 
 def test_binary_diff_constraint() :
     '''
     >>> test_binary_diff_constraint()
     con.vars: ['1', '2']
-    con.utility(x = [1, 1]): None
-    con.utility(x = [1, 2]): 0
+    con.cost(x = [1, 1]): None
+    con.cost(x = [1, 2]): 0
     '''
     con = BinaryDiffConstraint(vars = ["1", "2"])
     print(f"con.vars: {con.vars}")
-    print(f"con.utility(x = [1, 1]): {con.utility(x = [1, 1])}")
-    print(f"con.utility(x = [1, 2]): {con.utility(x = [1, 2])}")
+    print(f"con.cost(x = [1, 1]): {con.cost(x = [1, 1])}")
+    print(f"con.cost(x = [1, 2]): {con.cost(x = [1, 2])}")
 
 if __name__ == '__main__' :
     result = doctest.testmod()

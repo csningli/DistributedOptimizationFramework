@@ -8,7 +8,7 @@ from disto.monitor import Monitor
 from disto.utils import get_var_mapping, print_problem, get_datetime_stamp, view_logs
 
 # In this example, AsynBT (Makoto Yokoo and Toru Ishida, "The Distributed
-# Constraint Satisfaction Problem: Formalization and Algorithms") is used
+# Constraint Satisfaction Problem: Formalization and Algorithms", 1998) is used
 # to solve the graph coloring problem, which is modeled in a DCSP form.
 
 if __name__ == "__main__" :

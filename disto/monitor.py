@@ -52,7 +52,7 @@ class Monitor(object) :
         self.mem = []
         self.running = False
 
-    def run(self, agents, timeout = 60) :
+    def run(self, agents, timeout = 60, tolerance = None) :
         in_queues = [Queue() for i in range(len(agents))]
         out_queues = [Queue() for i in range(len(agents))]
         pool = [Process(target = run_agent, kwargs = {
@@ -62,14 +62,18 @@ class Monitor(object) :
             process.start()
 
         self.running = True
+        t_count = tolerance
         sys_msgs = []
         start_time = time.time()
         finish_time = None
-        while self.running == True and time.time() - start_time < timeout :
+        while self.running == True and time.time() - start_time < timeout and (t_count is None or t_count > 0) :
+            if t_count is not None :
+                t_count -= 1
             for i, out_queue in enumerate(out_queues) :
                 msg = get_one_item_in_queue(out_queue)
                 if isinstance(msg, SysMessage) :
                     sys_msgs.append(msg)
+                    t_count = tolerance
                 elif isinstance(msg, CommMessage) :
                     dest = []
                     if msg.dest is None :
@@ -80,6 +84,7 @@ class Monitor(object) :
                         dest.append(msg.dest)
                     for j in dest :
                         put_one_item_to_queue(in_queues[j], msg)
+                    t_count = tolerance
             if len(sys_msgs) > 0 :
                 finish_time = time.time()
                 self.handle_sys_msgs(msgs = sys_msgs)

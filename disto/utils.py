@@ -1,5 +1,5 @@
 
-import os, datetime, json, queue
+import os, datetime, json, queue, functools
 
 def get_current_time() :
     return datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")
@@ -76,12 +76,14 @@ def view_logs(log_dir, style = "agentbase") :
     else :
         print("Invalid style: %s." % style)
 
-def get_var_mapping(avars) :
+def get_var_host(avars) :
     var_mapping = {}
     for i, vars in enumerate(avars) :
         for var in vars :
            var_mapping[var] = i
-    return var_mapping
+    def var_host_with_mapping(var, var_mapping) :
+        return var_mapping.get(var, None)
+    return functools.partial(var_host_with_mapping, var_mapping = var_mapping)
 
 def check_dict_consitent(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
     result = True

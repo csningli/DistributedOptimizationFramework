@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import AsynBTAgent
 from disto.monitor import Monitor
-from disto.utils import get_var_mapping, print_problem, get_datetime_stamp, view_logs
+from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs
 
 # In this example, AsynBT (Makoto Yokoo and Toru Ishida, "The Distributed
 # Constraint Satisfaction Problem: Formalization and Algorithms", 1998) is used
@@ -34,14 +34,14 @@ if __name__ == "__main__" :
 
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
-    var_mapping = get_var_mapping(avars = avars)
+    var_host = get_var_host(avars = avars)
     # print(avars)
 
-    def con_host(con, var_mapping) :
-        ids = set([var_mapping[var] for var in con.vars])
+    def con_host(con, var_host) :
+        ids = set([var_host(var) for var in con.vars])
         return [max(ids)]
 
-    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_mapping = var_mapping))
+    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     agents = []
     log_dir = "logs/%s" % get_datetime_stamp()
     if not os.path.isdir(log_dir) :
@@ -49,14 +49,15 @@ if __name__ == "__main__" :
 
     outgoings = {i : [] for i in range(m)}
     for con in pro.cons :
-        ids = set([var_mapping[var] for var in con.vars])
-        max_id = max(ids)
-        for id in ids :
-            if id != max_id and max_id not in outgoings[id] :
-                outgoings[id].append(max_id)
+        host_ids = con_host(con, var_host)
+        for id in [var_host(var) for var in con.vars] :
+            if id not in host_ids :
+                for host_id in host_ids :
+                    if host_id not in outgoings[id] :
+                        outgoings[id].append(host_id)
 
     for i in range(m) :
-        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[i], var_mapping = var_mapping))
+        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[i], var_host = var_host, con_host = functools.partial(con_host, var_host = var_host)))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

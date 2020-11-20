@@ -152,10 +152,10 @@ class Problem(object) :
         avars : a list, where the i-th item is the list of variables assigned to the i-th agent
         con_host : a function return variables whose host agents will know the given constraint
         '''
-        var_mapping = get_var_mapping(avars = avars)
+        var_host = get_var_host(avars = avars)
         acons = [[] for i in range(len(avars))]
         for con in self.cons :
-            ids = set([var_mapping[var] for var in con.vars]) if con_host is None else con_host(con)
+            ids = set([var_host(var) for var in con.vars]) if con_host is None else con_host(con)
             for id in ids :
                 acons[id].append(con)
         pros = [Problem(vars = {var : self.vars[var] for var in avars[i]}, cons = acons[i]) for i in range(len(avars))]

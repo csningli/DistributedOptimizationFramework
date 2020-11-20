@@ -88,10 +88,11 @@ class SyncBTAgent(Agent) :
         return result
 
 class AsynBTAgent(Agent) :
-    def __init__(self, id, pro, outgoings, var_mapping, log_dir = "") :
+    def __init__(self, id, pro, outgoings, var_host, con_host, log_dir = "") :
         super(AsynBTAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
+        self.var_host = var_host
+        self.con_host = con_host
         self.outgoings = outgoings
-        self.var_mapping = var_mapping
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.view = {}
 
@@ -122,7 +123,7 @@ class AsynBTAgent(Agent) :
                         self.pro.cons.append(forbidden_con)
                         ids = []
                         for var in vars :
-                            id = self.var_mapping[var]
+                            id = self.var_host(var)
                             if var not in self.view and var not in self.assign and id not in ids :
                                 ids.append(id)
                         for id in ids :
@@ -138,7 +139,7 @@ class AsynBTAgent(Agent) :
                         for con in violated :
                             vars = [var for var in con.vars if var not in self.assign]
                             if len(vars) > 0 :
-                                ids.append(max([self.var_mapping[var] for var in vars]))
+                                ids.append(max([self.var_host(var) for var in vars]))
                         if len(ids) < 1 :
                             result["msgs"].append(SysMessage(src = self.id, content = None))
                         else :
@@ -167,6 +168,17 @@ class AsynWCSAgent(Agent) :
     def process(self, msgs) :
         result = {"msgs" : []}
         if len(self.sorted_vars) > 0 :
+            if self.assign[self.sorted_vars[0]] is None :
+                self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                self.log("init/%s" % self.assign)
+                if cost is None :
+                    result["msgs"].append(SysMessage(src = self.id, content = None))
+                else :
+                    for id in self.outgoings :
+                        result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
+            elif len(msgs) > 0 :
+                pass
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

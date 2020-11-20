@@ -162,6 +162,7 @@ class AsynBTAgent(Agent) :
 class AsynWCSAgent(Agent) :
     def __init__(self, id, pro, var_host, log_dir = "") :
         super(AsynWCSAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
+        self.fix_assign = fix_assign_min_conflict
         self.var_host = var_host
         self.neighbors = set([])
         for con in self.pro.cons :
@@ -176,15 +177,22 @@ class AsynWCSAgent(Agent) :
         if len(self.sorted_vars) > 0 :
             if self.assign[self.sorted_vars[0]] is None :
                 self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                pro = Problem(vars = self.pro.vars, cons = [])
+                cons = []
+                for con in self.pro.cons :
+                    if max([-(self.view_priorities.get(var_host(var), 0), var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
+                        cons.append(con)
+                    else :
+                        pro.cons.append(con)
+                self.assign, cost, violated = self.fix_assign(pro = pro, cons = cons, assign = self.assign, view = self.view, order_list = self.sorted_vars)
                 self.log("init/%s" % self.assign)
                 if cost is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     for id in self.neighbors :
-                        result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
+                        result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
             elif len(msgs) > 0 :
-                pass 
+                pass
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

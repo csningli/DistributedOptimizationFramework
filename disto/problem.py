@@ -100,6 +100,22 @@ def fix_assign(pro, assign, order_list = None) :
             cost, v = total_cost(cons, fixed)
     return fixed, cost, violated
 
+def fix_assign_min_conflict(pro, cons, assign, order_list = None) :
+    order_list = sorted(list(pro.vars.keys())) if order_list is None else order_list
+    fixed = copy.deepcopy(assign)
+    cons = cover_cons(pro.cons, assign)
+    violated = []
+    cost, v = total_cost(cons, fixed)
+    while cost is None :
+        violated += [con for con in v if con not in violated]
+        next = next_assign(fixed, pro.vars, order_list)
+        if next == fixed :
+            break
+        else :
+            fixed = next
+            cost, v = total_cost(cons, fixed)
+    return fixed, cost, violated
+
 class Constraint(object) :
     def __init__(self, vars) :
         self.vars = vars

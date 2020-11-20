@@ -184,7 +184,7 @@ class AsynWCSAgent(Agent) :
                     for id in self.neighbors :
                         result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
             elif len(msgs) > 0 :
-                pass
+                pass 
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

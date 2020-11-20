@@ -47,17 +47,14 @@ if __name__ == "__main__" :
     if not os.path.isdir(log_dir) :
         os.mkdir(log_dir)
 
-    outgoings = {i : [] for i in range(m)}
+    outgoings = {i : set([]) for i in range(m)}
     for con in pro.cons :
         host_ids = con_host(con, var_host)
-        for id in [var_host(var) for var in con.vars] :
-            if id not in host_ids :
-                for host_id in host_ids :
-                    if host_id not in outgoings[id] :
-                        outgoings[id].append(host_id)
+        for id in [var_host(var) for var in con.vars if var_host(var) not in host_ids] :
+             outgoings[id].update(host_ids)
 
     for i in range(m) :
-        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = outgoings[i], var_host = var_host, con_host = functools.partial(con_host, var_host = var_host)))
+        agents.append(AsynBTAgent(id = i, pro = sub_pros[i], log_dir = log_dir, outgoings = list(outgoings[i]), var_host = var_host, con_host = functools.partial(con_host, var_host = var_host)))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -76,10 +73,11 @@ if __name__ == "__main__" :
     final = {}
     for assign in monitor.mem :
         final.update(assign)
-    print("Final: %s" % final)
-    cost, _ = total_cost(cons = pro.cons, assign = final)
-    print("Cost: %s" % cost)
-    print("-" * 50)
+    if len(final) > 0 :
+        print("Final: %s" % final)
+        cost, _ = total_cost(cons = pro.cons, assign = final)
+        print("Cost: %s" % cost)
+        print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import AsynWCSAgent
 from disto.monitor import Monitor
-from disto.utils import print_problem, get_datetime_stamp, view_logs
+from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs
 
 # In this example, Asynchronous Weak-Commitment Search (Makoto Yokoo,
 # "Asynchronous Weak-commitment Search for Solving Distributed Constraint Satisfaction Problems",
@@ -34,6 +34,7 @@ if __name__ == "__main__" :
 
     m = 2 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
+    var_host = get_var_host(avars = avars)
     # print(avars)
 
     sub_pros = pro.split(avars = avars)
@@ -42,9 +43,7 @@ if __name__ == "__main__" :
     if not os.path.isdir(log_dir) :
         os.mkdir(log_dir)
     for i in range(m) :
-        prev = i - 1 if i > 0 else None
-        next = i + 1 if i < m - 1 else None
-        agents.append(AsynWCSAgent(id = i, pro = sub_pros[i], log_dir = log_dir))
+        agents.append(AsynWCSAgent(id = i, pro = sub_pros[i], var_host = var_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -58,11 +57,12 @@ if __name__ == "__main__" :
     print("-" * 50)
     print("Monitor.mem: %s" % monitor.mem)
     print("-" * 50)
-    final = monitor.mem[-1]
-    print("Final: %s" % final)
-    cost, _ = total_cost(cons = pro.cons, assign = final)
-    print("Cost: %s" % cost)
-    print("-" * 50)
+    if len(monitor.mem) > 0 :
+        final = monitor.mem[-1]
+        print("Final: %s" % final)
+        cost, _ = total_cost(cons = pro.cons, assign = final)
+        print("Cost: %s" % cost)
+        print("-" * 50)
     view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

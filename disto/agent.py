@@ -160,10 +160,16 @@ class AsynBTAgent(Agent) :
         return result
 
 class AsynWCSAgent(Agent) :
-    def __init__(self, id, pro, log_dir = "") :
+    def __init__(self, id, pro, var_host, log_dir = "") :
         super(AsynWCSAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
+        self.var_host = var_host
+        self.neighbors = set([])
+        for con in self.pro.cons :
+            ids = [self.var_host(var) for var in con.vars]
+            self.neighbors.update([id for id in ids if id != self.id])
         self.priority = 0
-        self.neighbors = []
+        self.sorted_vars = sorted(list(self.pro.vars.keys()))
+        self.view = {}
 
     def process(self, msgs) :
         result = {"msgs" : []}
@@ -175,7 +181,7 @@ class AsynWCSAgent(Agent) :
                 if cost is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
-                    for id in self.outgoings :
+                    for id in self.neighbors :
                         result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
             elif len(msgs) > 0 :
                 pass

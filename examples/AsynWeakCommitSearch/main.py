@@ -35,7 +35,6 @@ if __name__ == "__main__" :
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
     var_host = get_var_host(avars = avars)
-    # print(avars)
 
     sub_pros = pro.split(avars = avars)
     agents = []

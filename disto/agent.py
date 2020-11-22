@@ -162,8 +162,8 @@ class AsynBTAgent(Agent) :
 class AsynWCSAgent(Agent) :
     def __init__(self, id, pro, var_host, log_dir = "") :
         super(AsynWCSAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
-        self.fix_assign = fix_assign_min_conflict
         self.var_host = var_host
+        self.fix_assign = fix_assign_min_conflict
         self.neighbors = set([])
         for con in self.pro.cons :
             ids = [self.var_host(var) for var in con.vars]
@@ -171,6 +171,7 @@ class AsynWCSAgent(Agent) :
         self.priority = 0
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.view = {}
+        self.view_priorities = {}
 
     def process(self, msgs) :
         result = {"msgs" : []}
@@ -180,13 +181,13 @@ class AsynWCSAgent(Agent) :
                 pro = Problem(vars = self.pro.vars, cons = [])
                 cons = []
                 for con in self.pro.cons :
-                    if max([-(self.view_priorities.get(var_host(var), 0), var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
+                    if max([(-self.view_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
                         cons.append(con)
                     else :
                         pro.cons.append(con)
-                self.assign, cost, violated = self.fix_assign(pro = pro, cons = cons, assign = self.assign, view = self.view, order_list = self.sorted_vars)
+                self.assign, num_conflicts = self.fix_assign(pro = pro, conflict_cons = cons, assign = self.assign, order_list = self.sorted_vars)
                 self.log("init/%s" % self.assign)
-                if cost is None :
+                if num_conflicts is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     for id in self.neighbors :

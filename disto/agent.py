@@ -146,7 +146,7 @@ class AsynBTAgent(Agent) :
                             id = max(ids)
                             context = {}
                             for con in violated :
-                                context.update({var : self.view[var] for var in con.vars if var not in self.assign})
+                                context.update({var : cpa[var] for var in con.vars if var not in self.assign})
                             result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(context)))
                     else :
                         if check_dict_consitent(self.assign, cpa) == False :
@@ -175,13 +175,7 @@ class AsynWCSAgent(Agent) :
         if len(self.sorted_vars) > 0 :
             if self.assign[self.sorted_vars[0]] is None :
                 self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                pro = Problem(vars = self.pro.vars, cons = [])
-                cons = []
-                for con in self.pro.cons :
-                    if max([(-self.neighbor_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
-                        cons.append(con)
-                    else :
-                        pro.cons.append(con)
+                pro, cons = self.split_pro_with_priorities()
                 self.assign, num_conflicts, violated = self.fix_assign(pro = pro, conflict_cons = cons, assign = self.assign, order_list = self.sorted_vars)
                 self.log("init/%s" % self.assign)
                 if num_conflicts is None :
@@ -204,30 +198,26 @@ class AsynWCSAgent(Agent) :
                         if check_dict_consistent(cpa, msg.content) == True :
                             cpa.update(self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
                 if cpa != {**self.view, **self.assign} :
-                    pro = Problem(vars = self.pro.vars, cons = [])
-                    cons = []
-                    for con in self.pro.cons :
-                        if max([(-self.neighbor_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
-                            cons.append(con)
-                        else :
-                            pro.cons.append(con)
+                    pro, cons = self.split_pro_with_priorities()
                     cpa, num_conflicts, violated = self.fix_assign(pro = pro, conflict_cons = cons, assign = cpa, order_list = self.sorted_vars)
                     self.view.update({var : cpa[var] for var in cpa.keys() if var not in self.assign})
+                    nogoods = {id : {} for id in self.neighbors}
                     if num_conflicts is None :
                         self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                        ids = []
+                        max_priority = 0
                         for con in violated :
-                            vars = [var for var in con.vars if var not in self.assign]
-                            if len(vars) > 0 :
-                                ids.append(max([self.var_host(var) for var in vars]))
-                        if len(ids) < 1 :
-                            result["msgs"].append(SysMessage(src = self.id, content = None))
-                        else :
-                            id = max(ids)
-                            context = {}
-                            for con in violated :
-                                context.update({var : self.view[var] for var in con.vars if var not in self.assign})
-                            result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(context)))
+                            for var in con.vars :
+                                max_priority = max(max_priority, self.neighbor_priorities[self.var_host[var]])
+                                if var not in self.assign :
+                                    nogoods[self.var_host[var]][var] = cpa[var]
+                        for id in self.neighbors :
+                            if len(nogoods[id]) > 0 :
+                                result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(nogoods[id])))
+                        self.priority = max_priority + 1
+                        for var in self.assign.keys() :
+                            self.assign[var] = cpa[var]
+                        for id in self.neighbors :
+                            result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
                     else :
                         if check_dict_consistent(self.assign, cpa) == False :
                             for var in self.assign.keys() :
@@ -238,3 +228,13 @@ class AsynWCSAgent(Agent) :
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
+
+    def split_pro_with_priorities(self) :
+        pro = Problem(vars = self.pro.vars, cons = [])
+        cons = []
+        for con in self.pro.cons :
+            if max([(-self.neighbor_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
+                cons.append(con)
+            else :
+                pro.cons.append(con)
+        return pro, cons

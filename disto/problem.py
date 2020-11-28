@@ -109,7 +109,8 @@ def total_conflicts(cons, assign) :
     return num
 
 def fix_assign_min_conflict(pro, conflict_cons, assign, order_list = None) :
-    fixed, min_conflict, total_violated = None, None, []
+    fixed, min_conflict = None, None
+    min_violated, total_violated = None, []
     candidate = copy.deepcopy(assign)
     for var in order_list :
         candidate[var] = pro.vars[var].first_value()
@@ -120,7 +121,10 @@ def fix_assign_min_conflict(pro, conflict_cons, assign, order_list = None) :
             if min_conflict is None or num < min_conflict :
                 min_conflict = num
                 fixed = next
-        else :
+        elif min_conflict is None :
+            if min_violated is None or len(violated) < min_violated :
+                min_violated = len(violated)
+                fixed = next
             total_violated += violated
         next = next_assign(candidate, pro.vars, order_list)
         if next == candidate :

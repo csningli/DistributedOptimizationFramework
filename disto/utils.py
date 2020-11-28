@@ -85,7 +85,7 @@ def get_var_host(avars) :
         return var_mapping.get(var, None)
     return functools.partial(var_host_with_mapping, var_mapping = var_mapping)
 
-def check_dict_consitent(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
+def check_dict_consistent(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
     result = True
     for key, value in d2.items() :
         if key in d1 and value != d1[key] :

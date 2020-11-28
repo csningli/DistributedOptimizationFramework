@@ -149,7 +149,7 @@ class AsynBTAgent(Agent) :
                                 context.update({var : cpa[var] for var in con.vars if var not in self.assign})
                             result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(context)))
                     else :
-                        if check_dict_consitent(self.assign, cpa) == False :
+                        if check_dict_consistent(self.assign, cpa) == False :
                             for var in self.assign.keys() :
                                 self.assign[var] = cpa[var]
                             for id in self.outgoings :
@@ -217,13 +217,13 @@ class AsynWCSAgent(Agent) :
                         for var in self.assign.keys() :
                             self.assign[var] = cpa[var]
                         for id in self.neighbors :
-                            result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
+                            result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
                     else :
                         if check_dict_consistent(self.assign, cpa) == False :
                             for var in self.assign.keys() :
                                 self.assign[var] = cpa[var]
                             for id in self.neighbors :
-                                result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
+                                result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
                         result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)

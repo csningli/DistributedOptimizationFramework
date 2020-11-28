@@ -109,7 +109,7 @@ def total_conflicts(cons, assign) :
     return num
 
 def fix_assign_min_conflict(pro, conflict_cons, assign, order_list = None) :
-    min_conflict = (None, None)
+    fixed, min_conflict, total_violated = None, None, []
     candidate = copy.deepcopy(assign)
     for var in order_list :
         candidate[var] = pro.vars[var].first_value()
@@ -117,14 +117,19 @@ def fix_assign_min_conflict(pro, conflict_cons, assign, order_list = None) :
         next, cost, violated = fix_assign(pro, candidate, order_list)
         if cost is not None :
             num = total_conflicts(conflict_cons, next)
-            if min_conflict[1] is None or num < min_conflict[1] :
-                min_conflict = (next, num)
+            if min_conflict is None or num < min_conflict :
+                min_conflict = num
+                fixed = next
+        else :
+            total_violated += violated
         next = next_assign(candidate, pro.vars, order_list)
         if next == candidate :
             break
         else :
             candidate = next
-    return min_conflict
+    if min_conflict is not None :
+        total_violated = []
+    return fixed, min_conflict, total_violated
 
 class Constraint(object) :
     def __init__(self, vars) :

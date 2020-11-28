@@ -92,3 +92,11 @@ def check_dict_consitent(d1, d2) : # return True iff d1 and d2 have the same val
             result = False
             break
     return result
+
+def check_dict_contained(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
+    result = True
+    for key, value in d1.items() :
+        if key not in d2 or value != d2[key] :
+            result = False
+            break
+    return result

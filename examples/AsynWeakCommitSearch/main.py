@@ -42,7 +42,9 @@ if __name__ == "__main__" :
     if not os.path.isdir(log_dir) :
         os.mkdir(log_dir)
     for i in range(m) :
-        agents.append(AsynWCSAgent(id = i, pro = sub_pros[i], var_host = var_host, log_dir = log_dir))
+        agents.append(AsynWCSAgent(id = i, pro = sub_pros[i],
+            neighbors = [j for j in range(m) if j != i],
+            var_host = var_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

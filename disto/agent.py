@@ -128,7 +128,7 @@ class AsynBTAgent(Agent) :
                                 ids.append(id)
                         for id in ids :
                             result["msgs"].append(LinkMessage(src = self.id, dest = id, content = None))
-                        if msg.content == cpa :
+                        if check_dict_consistent(cpa, msg.content) == True :
                             cpa.update(self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
                 if cpa != {**self.view, **self.assign} :
                     cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
@@ -160,18 +160,15 @@ class AsynBTAgent(Agent) :
         return result
 
 class AsynWCSAgent(Agent) :
-    def __init__(self, id, pro, var_host, log_dir = "") :
+    def __init__(self, id, pro, neighbors, var_host, log_dir = "") :
         super(AsynWCSAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
+        self.neighbors = neighbors
         self.var_host = var_host
         self.fix_assign = fix_assign_min_conflict
-        self.neighbors = set([])
-        for con in self.pro.cons :
-            ids = [self.var_host(var) for var in con.vars]
-            self.neighbors.update([id for id in ids if id != self.id])
         self.priority = 0
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.view = {}
-        self.view_priorities = {}
+        self.neighbor_priorities = {}
 
     def process(self, msgs) :
         result = {"msgs" : []}
@@ -181,11 +178,11 @@ class AsynWCSAgent(Agent) :
                 pro = Problem(vars = self.pro.vars, cons = [])
                 cons = []
                 for con in self.pro.cons :
-                    if max([(-self.view_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
+                    if max([(-self.neighbor_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
                         cons.append(con)
                     else :
                         pro.cons.append(con)
-                self.assign, num_conflicts = self.fix_assign(pro = pro, conflict_cons = cons, assign = self.assign, order_list = self.sorted_vars)
+                self.assign, num_conflicts, violated = self.fix_assign(pro = pro, conflict_cons = cons, assign = self.assign, order_list = self.sorted_vars)
                 self.log("init/%s" % self.assign)
                 if num_conflicts is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
@@ -193,7 +190,51 @@ class AsynWCSAgent(Agent) :
                     for id in self.neighbors :
                         result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
             elif len(msgs) > 0 :
-                pass
+                cpa = {**self.view, **self.assign}
+                for msg in msgs :
+                    self.log_msg("receive", msg)
+                    if isinstance(msg, OkMessage) :
+                        cpa.update(msg.content[1])
+                        self.neighbor_priorities[msg.src] = msg.content[0]
+                for msg in msgs :
+                    if isinstance(msg, NogoodMessage) and msg.src > self.id :
+                        vars = list(msg.content.keys())
+                        forbidden_con = ForbiddenConstraint(vars = vars, values = [msg.content[var] for var in vars])
+                        self.pro.cons.append(forbidden_con)
+                        if check_dict_consistent(cpa, msg.content) == True :
+                            cpa.update(self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
+                if cpa != {**self.view, **self.assign} :
+                    pro = Problem(vars = self.pro.vars, cons = [])
+                    cons = []
+                    for con in self.pro.cons :
+                        if max([(-self.neighbor_priorities.get(self.var_host(var), 0), self.var_host(var)) for var in con.vars]) >= (-self.priority, self.id) :
+                            cons.append(con)
+                        else :
+                            pro.cons.append(con)
+                    cpa, num_conflicts, violated = self.fix_assign(pro = pro, conflict_cons = cons, assign = cpa, order_list = self.sorted_vars)
+                    self.view.update({var : cpa[var] for var in cpa.keys() if var not in self.assign})
+                    if num_conflicts is None :
+                        self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                        ids = []
+                        for con in violated :
+                            vars = [var for var in con.vars if var not in self.assign]
+                            if len(vars) > 0 :
+                                ids.append(max([self.var_host(var) for var in vars]))
+                        if len(ids) < 1 :
+                            result["msgs"].append(SysMessage(src = self.id, content = None))
+                        else :
+                            id = max(ids)
+                            context = {}
+                            for con in violated :
+                                context.update({var : self.view[var] for var in con.vars if var not in self.assign})
+                            result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(context)))
+                    else :
+                        if check_dict_consistent(self.assign, cpa) == False :
+                            for var in self.assign.keys() :
+                                self.assign[var] = cpa[var]
+                            for id in self.neighbors :
+                                result["msgs"].append(OkMessage(src = self.id, dest = id, content = copy.deepcopy(self.assign)))
+                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

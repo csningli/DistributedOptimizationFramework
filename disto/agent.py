@@ -205,19 +205,26 @@ class AsynWCSAgent(Agent) :
                     if num_conflicts is None :
                         self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
                         max_priority = 0
+                        ids = []
                         for con in violated :
                             for var in con.vars :
                                 max_priority = max(max_priority, self.neighbor_priorities[self.var_host[var]])
                                 if var not in self.assign :
                                     nogoods[self.var_host[var]][var] = cpa[var]
-                        for id in self.neighbors :
-                            if len(nogoods[id]) > 0 :
-                                result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(nogoods[id])))
-                        self.priority = max_priority + 1
-                        for var in self.assign.keys() :
-                            self.assign[var] = cpa[var]
-                        for id in self.neighbors :
-                            result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
+                                id = self.var_host(var)
+                                if id != self.id and id not in ids :
+                                    ids.append(id)
+                        if len(ids) < 1 :
+                            result["msgs"].append(SysMessage(src = self.id, content = None))
+                        else :
+                            for id in self.neighbors :
+                                if len(nogoods[id]) > 0 :
+                                    result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(nogoods[id])))
+                            self.priority = max_priority + 1
+                            for var in self.assign.keys() :
+                                self.assign[var] = cpa[var]
+                            for id in self.neighbors :
+                                result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
                     else :
                         if check_dict_consistent(self.assign, cpa) == False :
                             for var in self.assign.keys() :

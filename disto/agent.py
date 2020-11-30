@@ -214,7 +214,7 @@ class AsynWCSAgent(Agent) :
                                     nogood[var] = cpa[var]
                                     if id not in ids :
                                         ids.append(id)
-                        if len(ids) < 1 : # in such case, nogood has no element.
+                        if len(ids) < 1 : # in such case, there is no element in the nogood.
                             result["msgs"].append(SysMessage(src = self.id, content = None))
                         else :
                             for id in self.neighbors :

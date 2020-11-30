@@ -201,25 +201,25 @@ class AsynWCSAgent(Agent) :
                     pro, cons = self.split_pro_with_priorities()
                     cpa, num_conflicts, violated = self.fix_assign(pro = pro, conflict_cons = cons, assign = cpa, order_list = self.sorted_vars)
                     self.view.update({var : cpa[var] for var in cpa.keys() if var not in self.assign})
-                    nogoods = {id : {} for id in self.neighbors}
                     if num_conflicts is None :
                         self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                        nogood = {}
                         max_priority = 0
                         ids = []
                         for con in violated :
                             for var in con.vars :
-                                max_priority = max(max_priority, self.neighbor_priorities[self.var_host[var]])
-                                if var not in self.assign :
-                                    nogoods[self.var_host[var]][var] = cpa[var]
                                 id = self.var_host(var)
-                                if id != self.id and id not in ids :
-                                    ids.append(id)
-                        if len(ids) < 1 :
+                                max_priority = max(max_priority, self.neighbor_priorities[id])
+                                if var not in self.assign :
+                                    nogood[var] = cpa[var]
+                                    if id not in ids :
+                                        ids.append(id)
+                        if len(ids) < 1 : # in such case, nogood has no element.
                             result["msgs"].append(SysMessage(src = self.id, content = None))
                         else :
                             for id in self.neighbors :
                                 if len(nogoods[id]) > 0 :
-                                    result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(nogoods[id])))
+                                    result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(nogood)))
                             self.priority = max_priority + 1
                             for var in self.assign.keys() :
                                 self.assign[var] = cpa[var]

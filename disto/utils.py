@@ -100,3 +100,6 @@ def check_dict_contained(d1, d2) : # return True ff the key-values in d1 are def
             result = False
             break
     return result
+
+def get_dict_hash(d) :
+    return hash(frozenset(d.items()))

@@ -128,7 +128,7 @@ class AsynBTAgent(Agent) :
                                 ids.append(id)
                         for id in ids :
                             result["msgs"].append(LinkMessage(src = self.id, dest = id, content = None))
-                        if check_dict_consistent(cpa, msg.content) == True :
+                        if check_dict_compatible(cpa, msg.content) == True :
                             cpa.update(self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
                 if cpa != {**self.view, **self.assign} :
                     cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
@@ -149,7 +149,7 @@ class AsynBTAgent(Agent) :
                                 context.update({var : cpa[var] for var in con.vars if var not in self.assign})
                             result["msgs"].append(NogoodMessage(src = self.id, dest = id, content = copy.deepcopy(context)))
                     else :
-                        if check_dict_consistent(self.assign, cpa) == False :
+                        if check_dict_compatible(self.assign, cpa) == False :
                             for var in self.assign.keys() :
                                 self.assign[var] = cpa[var]
                             for id in self.outgoings :
@@ -195,7 +195,7 @@ class AsynWCSAgent(Agent) :
                         vars = list(msg.content.keys())
                         forbidden_con = ForbiddenConstraint(vars = vars, values = [msg.content[var] for var in vars])
                         self.pro.cons.append(forbidden_con)
-                        if check_dict_consistent(cpa, msg.content) == True :
+                        if check_dict_compatible(cpa, msg.content) == True :
                             cpa.update(self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars))
                 if cpa != {**self.view, **self.assign} :
                     pro, cons = self.split_pro_with_priorities()
@@ -226,7 +226,7 @@ class AsynWCSAgent(Agent) :
                             for id in self.neighbors :
                                 result["msgs"].append(OkMessage(src = self.id, dest = id, content = (self.priority, copy.deepcopy(self.assign))))
                     else :
-                        if check_dict_consistent(self.assign, cpa) == False :
+                        if check_dict_compatible(self.assign, cpa) == False :
                             for var in self.assign.keys() :
                                 self.assign[var] = cpa[var]
                             for id in self.neighbors :

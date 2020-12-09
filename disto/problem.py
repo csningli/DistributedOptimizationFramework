@@ -156,6 +156,10 @@ class BinaryDiffConstraint(Constraint) :
     def cost(self, x) :
         return 0 if x[0] != x[1] else None
 
+class BinaryDiffCost(Constraint) :
+    def cost(self, x) :
+        return 0 if x[0] != x[1] else 1
+
 class DiffConstraint(Constraint) :
     def cost(self, x) :
         return 0 if len(set(x)) >= len(x) else None
@@ -197,15 +201,16 @@ class Problem(object) :
         return pros
 
 class GraphColoringProblem(Problem) :
-    def __init__(self, graph, num_colors = 4) :
+    def __init__(self, graph, num_colors = 4, violation_cost = False) :
         self.graph = graph
         self.num_colors = num_colors
         domain = Domain(values = [i for i in range(self.num_colors)])
         n = self.graph.number_of_nodes()
         vars = {"%d" % i : domain for i in range(n)}
         cons = []
+        con_cls = BinaryDiffConstraint if violation_cost == False else BinaryDiffCost
         for edge in self.graph.edges :
-            cons.append(BinaryDiffConstraint(vars = [edge[0], edge[1]]))
+            cons.append(con_cls(vars = [edge[0], edge[1]]))
         super(GraphColoringProblem, self).__init__(vars = vars, cons = cons)
 
     def info(self) :

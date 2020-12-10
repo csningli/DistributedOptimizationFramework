@@ -12,6 +12,11 @@ def test_domain() :
     domain.next_value(value = 1): 2
     domain.next_value(value = 2): 3
     domain.next_value(value = 3): None
+    domain.start_index = 1
+    domain.first_value(): 2
+    domain.next_value(value = 2): 3
+    domain.next_value(value = 3): 1
+    domain.next_value(value = 1): None
     '''
     domain = Domain(values = [1, 2, 3])
     print(f"domain.values: {domain.values}")

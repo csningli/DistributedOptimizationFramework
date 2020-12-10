@@ -6,21 +6,22 @@ from disto.utils import *
 class Domain(object) :
     def __init__(self, values) :
         self.values = values
+        self.start_index = 0 if len(self.values) > 0 else None
 
     def info(self) :
         return f"<<Disto.{type(self).__name__} num_values = {len(self.values)}>>"
 
     def first_value(self) :
-        return None if len(self.values) < 1 else self.values[0]
+        return None if self.start_index is None else self.values[self.start_index]
 
     def last_value(self) :
-        return None if len(self.values) < 1 else self.values[-1]
+        return None if self.start_index is None else self.values[self.start_index - 1]
 
     def next_value(self, value) :
         next = None
         if value in self.values :
             index = self.values.index(value) + 1
-            if index < len(self.values) :
+            if index <= (self.start_index - 1) % len(self.values) :
                 next = self.values[index]
         return next
 

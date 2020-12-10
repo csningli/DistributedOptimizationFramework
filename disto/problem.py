@@ -20,9 +20,9 @@ class Domain(object) :
     def next_value(self, value) :
         next = None
         if value in self.values :
-            index = self.values.index(value) + 1
-            if index <= (self.start_index - 1) % len(self.values) :
-                next = self.values[index]
+            index = self.values.index(value)
+            if index !=  (self.start_index - 1) % len(self.values) :
+                next = self.values[(index + 1) % len(self.values)]
         return next
 
 def init_assign(vars, order_list = None) :

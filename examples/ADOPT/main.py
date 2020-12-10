@@ -21,12 +21,13 @@ if __name__ == "__main__" :
     for i in range(n) :
         graph.add_node(str(i))
 
-    d = 2
+    d = 3
     for i in range(n) :
         for j in range(1, d + 1) :
             graph.add_edge(str(i), str((i + j) % n))
 
-    # build the graph coloring problem in the DCSP format
+    # build the graph coloring problem in the DCOP format, where
+    # the cost is defined as the number of violated constraintss
 
     pro = GraphColoringProblem(graph = graph, num_colors = 3, violation_cost = True)
     print("* Global Problem *")
@@ -44,7 +45,7 @@ if __name__ == "__main__" :
         os.mkdir(log_dir)
     for i in range(m) :
         agents.append(AdoptAgent(id = i, pro = sub_pros[i],
-            neighbors = [j for j in range(m) if j != i],
+            parent = None, children = [],
             var_host = var_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :

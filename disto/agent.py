@@ -247,15 +247,12 @@ class AsynWCSAgent(Agent) :
         return pro, cons
 
 class AdoptAgent(Agent) :
-    def __init__(self, id, pro, neighbors, var_host, log_dir = "") :
+    def __init__(self, id, pro, parent, children, var_host, log_dir = "") :
         super(AdoptAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
-        self.neighbors = neighbors
+        self.parent = parent
+        self.children = children
         self.var_host = var_host
-        self.fix_assign = fix_assign_min_conflict
-        self.priority = 0
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.view = {}
-        self.neighbor_priorities = {}
 
     def process(self, msgs) :
         result = {"msgs" : []}

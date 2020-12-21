@@ -21,7 +21,8 @@ else
   conda activate $CONENV
 fi
 
-export PYTHONPATH=$PYTHONPATH:`pwd`
+export PYTHONPATH="C:\\cygwin64\\"`pwd`
+
 if [ $# -gt 0 ]
 then
   python $1.py $2 $3

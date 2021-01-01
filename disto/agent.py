@@ -1,5 +1,5 @@
 
-import os, copy, numpy
+import os, copy, numpy, math
 
 from disto.problem import *
 from disto.monitor import *
@@ -94,6 +94,7 @@ class SyncBBAgent(Agent) :
         self.next = next
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.cpa = {}
+        self.upper = math.inf
 
     def process(self, msgs) :
         result = {"msgs" : []}

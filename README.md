@@ -1,6 +1,5 @@
 # DistributedOptimizationFramework (Disto)
-Disto is an implementation of the shared-variable solving framwork for
-the distributed optimization problems.
+Disto is a framwork in Python for the implementation of the distributed optimization algorithms.
 
 ## Conda Environment
 

@@ -1,5 +1,5 @@
 # DistributedOptimizationFramework (Disto)
-Disto is a framwork in Python for the implementation of the distributed optimization algorithms.
+Disto is a framework in Python for the implementation of the distributed optimization algorithms.
 
 ## Conda Environment
 

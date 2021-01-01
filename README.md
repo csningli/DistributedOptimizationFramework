@@ -29,3 +29,6 @@ For example, the following command runs "tests/test_agent.py".
 By default, calling "run.sh" without any arguments runs all the tests.
 
     ./run.sh
+
+## Run on Windows
+On Windows, use "run_win.sh" in stead of "run.sh".

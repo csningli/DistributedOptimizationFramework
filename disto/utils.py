@@ -103,3 +103,34 @@ def check_dict_contained(d1, d2) : # return True ff the key-values in d1 are def
 
 def get_dict_hash(d) :
     return hash(frozenset(d.items()))
+
+def get_constraint_graph(pro, avars) :
+    var_host = get_var_host(avars = avars)
+    graph = [[] for i in range(len(avars))]
+    for con in pro.cons :
+        for i in range(len(con.vars)) :
+            for j in range(i + 1, len(con.vars)) :
+                if cons.vars[j] not in graph[cons.vars[i]] :
+                    graph[cons.vars[i]].append(cons.vars[j])
+                if cons.vars[i] not in graph[cons.vars[j]] :
+                    graph[cons.vars[j]].append(cons.vars[i])
+    return graph
+
+def get_pseudo_tree(graph) :
+    # the tree is returned in a format of list, where the i-th entry contains a tuple
+    # consisting of the parent and the list of children of node i.
+    tree = [(None, []) for i in range(len(graph))]
+    visited = [False] * len(graph)
+    queue = [(None, 0)]
+    while len(queue) > 0 :
+        parent, node = queue.pop()
+        if visited[node] == False :
+            if parent is not None :
+                tree[node] = (parent, [])
+                if node not in tree[parent][1] :
+                    tree[parent][1].append(node)
+            for nb in graph[stand] :
+                if visited[nb] == False :
+                    queue.append((node, nb))
+            visited[node] = True
+    return tree

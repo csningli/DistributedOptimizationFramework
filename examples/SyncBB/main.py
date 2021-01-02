@@ -1,11 +1,11 @@
 
-import os, math
+import os, math, functools
 import networkx as nx
 
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import SyncBBAgent
 from disto.monitor import Monitor
-from disto.utils import print_problem, get_datetime_stamp, view_logs
+from disto.utils import print_problem, get_datetime_stamp, view_logs, get_var_host
 
 # In this example, SyncBB (Katsutoshi Hirayama and Makoto Yokoo,
 # "Distributed Partial Constraint Satisfaction Problem, 2005)
@@ -35,9 +35,14 @@ if __name__ == "__main__" :
 
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
+    var_host = get_var_host(avars = avars)
     # print(avars)
 
-    sub_pros = pro.split(avars = avars)
+    def con_host(con, var_host) :
+        ids = set([var_host(var) for var in con.vars])
+        return [max(ids)]
+
+    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     agents = []
     log_dir = "logs/%s" % get_datetime_stamp()
     if not os.path.isdir(log_dir) :

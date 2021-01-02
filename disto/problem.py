@@ -159,7 +159,7 @@ class BinaryDiffConstraint(Constraint) : # for a Constraint, the cost function r
     def cost(self, x) :
         return 0 if x[0] != x[1] else None
 
-class BinaryDiffCost(Constraint) : # for a Cost, the cost function always returns a number as the cost evaluation of the given assignment. 
+class BinaryDiffCost(Constraint) : # for a Cost, the cost function always returns a number as the cost evaluation of the given assignment.
     def cost(self, x) :
         return 0 if x[0] != x[1] else 1
 

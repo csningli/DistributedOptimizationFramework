@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import AdoptAgent
 from disto.monitor import Monitor
-from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs
+from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph, get_pseudo_tree
 
 # In this example, Asynchronous Distributed Optimization - Adopt (Pragnesh Jay Modi, Wei-Min Shen,
 # Milind Tambe, and Makoto Yokoo, "Adopt: Asynchronous Distributed Constraint Optimization with
@@ -13,6 +13,10 @@ from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_lo
 # which is modeled in a DCOP form. In the problem, the cost is defined as the number of violated constraints.
 
 if __name__ == "__main__" :
+    log_dir = "logs/%s" % get_datetime_stamp()
+    if not os.path.isdir(log_dir) :
+        os.mkdir(log_dir)
+
     n = 6 # number of variables
 
     # graph = nx.generators.random_graphs.fast_gnp_random_graph(n = n, p = 0.6)
@@ -38,14 +42,20 @@ if __name__ == "__main__" :
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
     var_host = get_var_host(avars = avars)
 
-    sub_pros = pro.split(avars = avars)
+    cons_graph = get_constraint_graph(pro = pro, var_host = var_host)
+    pseudo_tree = get_pseudo_tree(graph = cons_graph)
+
+    # print(avars)
+
+    def con_host(con, var_host) :
+        ids = set([var_host(var) for var in con.vars])
+        return [max(ids)]
+
+    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     agents = []
-    log_dir = "logs/%s" % get_datetime_stamp()
-    if not os.path.isdir(log_dir) :
-        os.mkdir(log_dir)
     for i in range(m) :
         agents.append(AdoptAgent(id = i, pro = sub_pros[i],
-            parent = None, children = [],
+            parent = pseudo_tree[i][0], children = pseudo_tree[i][1],
             var_host = var_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :

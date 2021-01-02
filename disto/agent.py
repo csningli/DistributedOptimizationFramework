@@ -53,7 +53,7 @@ class SyncBTAgent(Agent) :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
                     if self.next is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
+                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(self.assign)))
                         result["msgs"].append(SysMessage(src = self.id, content = None))
                     else :
                         result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = copy.deepcopy(self.assign)))
@@ -74,7 +74,7 @@ class SyncBTAgent(Agent) :
                         result["msgs"].append(SysMessage(src = self.id, content = None))
                         self.log_msg("send", result["msgs"][-1])
                     else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.prev, content = copy.deepcopy(cpa)))
+                        result["msgs"].append(CommMessage(src = self.id, dest = self.prev, content = None))
                 else :
                     for var in self.assign.keys() :
                         self.assign[var] = cpa[var]
@@ -88,12 +88,16 @@ class SyncBTAgent(Agent) :
         return result
 
 class SyncBBAgent(Agent) :
-    def __init__(self, id, pro, prev, next, log_dir = "") :
+    def __init__(self, id, pro, prev, next, head, tail, log_dir = "") :
         super(SyncBBAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.prev = prev
         self.next = next
+        self.head = head
+        self.tail = tail
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.cpa = {}
+        self.cpa_cost = 0
+        self.best = {}
         self.upper = math.inf
 
     def process(self, msgs) :
@@ -101,45 +105,70 @@ class SyncBBAgent(Agent) :
         if len(self.sorted_vars) > 0 :
             if self.prev is None and self.assign[self.sorted_vars[0]] is None :
                 self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
                 self.log("start/init cpa")
-                if cost is None :
+                if self.assign is None :
                     result["msgs"].append(SysMessage(src = self.id, content = None))
                 else :
-                    if self.next is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
+                    self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                    while self.assign is not None and self.cpa_cost + cost > self.upper :
+                        self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
+                        self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                    if self.assign is None :
                         result["msgs"].append(SysMessage(src = self.id, content = None))
                     else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = copy.deepcopy(self.assign)))
+                        if self.next is None :
+                            result["msgs"].append(SysMessage(src = self.id, content = (copy.deepcopy(self.assign), cost, self.upper)))
+                            result["msgs"].append(SysMessage(src = self.id, content = None))
+                        else :
+                            result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = (copy.deepcopy(self.assign), cost, self.upper)))
             elif len(msgs) > 0 :
                 msg = msgs[0]
                 self.log_msg("receive", msg)
                 if msg.src == self.prev :
-                    self.cpa = copy.deepcopy(msg.content)
+                    self.cpa = copy.deepcopy(msg.content[0])
+                    self.cpa_cost = msg.content[1]
+                    self.upper = msg.content[2]
                     if self.assign[self.sorted_vars[0]] is None :
                         self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                elif msg.src == self.tail and msg.content is not None :
+                    self.best = msg.content[0]
+                    self.upper = msg.content[1]
+                    self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
                 elif msg.src == self.next :
                     self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
-                cpa = {**self.cpa, **self.assign}
-                cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
-                if cost is None :
-                    self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
-                    if self.prev is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = None))
-                        self.log_msg("send", result["msgs"][-1])
-                    else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.prev, content = copy.deepcopy(cpa)))
+
+                if self.assign is None :
+                    result["msgs"] += self.backtrack()
                 else :
-                    for var in self.assign.keys() :
-                        self.assign[var] = cpa[var]
-                    if self.next is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = copy.deepcopy(cpa)))
-                        result["msgs"].append(SysMessage(src = self.id, content = None))
+                    cpa = {**self.cpa, **self.assign}
+                    cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                    while self.assign is not None and self.cpa_cost + cost > self.upper :
+                        self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
+                        cpa = {**self.cpa, **self.assign}
+                        cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                    if self.assign is None :
+                        result["msgs"] += self.backtrack()
                     else :
-                        result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = copy.deepcopy(cpa)))
+                        for var in self.assign.keys() :
+                            self.assign[var] = cpa[var]
+                        if self.next is None :
+                            result["msgs"].append(CommMessage(src = self.id, dest = self.head, content = (copy.deepcopy(cpa), self.cpa_cost + cost, self.upper)))
+                        else :
+                            result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = (copy.deepcopy(cpa), self.cpa_cost + cost, self.upper)))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
+
+    def backtrack(self) :
+        msgs = []
+        self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+        if self.prev is None :
+            msgs.append(SysMessage(src = self.id, content = (copy.deepcopy(self.best), self.upper, self.upper)))
+            msgs.append(SysMessage(src = self.id, content = None))
+            self.log_msg("send", msgs[-1])
+        else :
+            msgs.append(CommMessage(src = self.id, dest = self.prev, content = None))
+        return msgs
 
 class AsynBTAgent(Agent) :
     def __init__(self, id, pro, outgoings, var_host, con_host, log_dir = "") :

@@ -42,6 +42,8 @@ def next_assign(assign, vars, order_list = None) :
             for j in range(i + 1, len(order_list)) :
                 next[order_list[j]] = vars[order_list[j]].first_value()
             break
+    if next == assign :
+        next = None
     return next
 
 def cover_cons(cons, assign) :
@@ -94,7 +96,7 @@ def fix_assign(pro, assign, order_list = None) :
     while cost is None :
         violated += [con for con in v if con not in violated]
         next = next_assign(fixed, pro.vars, order_list)
-        if next == fixed :
+        if next is None :
             break
         else :
             fixed = next
@@ -128,7 +130,7 @@ def fix_assign_min_conflict(pro, conflict_cons, assign, order_list = None) :
                 fixed = next
             total_violated += violated
         next = next_assign(candidate, pro.vars, order_list)
-        if next == candidate :
+        if next is None :
             break
         else :
             candidate = next

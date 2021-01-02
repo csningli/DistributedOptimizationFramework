@@ -7,9 +7,10 @@ from disto.agent import SyncBBAgent
 from disto.monitor import Monitor
 from disto.utils import print_problem, get_datetime_stamp, view_logs
 
-# In this example, SyncBT (Makoto Yokoo and Toru Ishida, "The Distributed
-# Constraint Satisfaction Problem: Formalization and Algorithms", 1998)
-# is used to solve the graph coloring problem, which is modeled in a DCSP form.
+# In this example, SyncBB (Katsutoshi Hirayama and Makoto Yokoo,
+# "Distributed Partial Constraint Satisfaction Problem, 2005)
+# is used to solve the graph coloring problem in the DCOP format,
+# where the cost is defined as the number of violated constraints.
 
 if __name__ == "__main__" :
     n = 6 # number of variables
@@ -44,7 +45,7 @@ if __name__ == "__main__" :
     for i in range(m) :
         prev = i - 1 if i > 0 else None
         next = i + 1 if i < m - 1 else None
-        agents.append(SyncBBAgent(id = i, pro = sub_pros[i], log_dir = log_dir, prev = prev, next = next))
+        agents.append(SyncBBAgent(id = i, pro = sub_pros[i], log_dir = log_dir, prev = prev, next = next, head = 0, tail = m - 1))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -60,10 +61,8 @@ if __name__ == "__main__" :
     print("-" * 50)
     if len(monitor.mem) > 0 :
         final = monitor.mem[-1]
-        print("Final: %s" % final)
-        cost, _ = total_cost(cons = pro.cons, assign = final)
-        print("Cost: %s" % cost)
+        print("Final (assign/cost/upper): %s/%s/%s" % final)
         print("-" * 50)
-    view_logs(log_dir = log_dir, style = "timeline")
+    # view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

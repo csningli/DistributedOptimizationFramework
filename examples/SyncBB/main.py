@@ -62,7 +62,6 @@ if __name__ == "__main__" :
     if len(monitor.mem) > 0 :
         final = monitor.mem[-1]
         print("Final (assign/cost/upper): %s/%s/%s" % final)
-        print("-" * 50)
     # view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

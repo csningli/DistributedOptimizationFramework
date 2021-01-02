@@ -21,7 +21,7 @@ if __name__ == "__main__" :
     for i in range(n) :
         graph.add_node(str(i))
 
-    d = 2
+    d = 3
     for i in range(n) :
         for j in range(1, d + 1) :
             graph.add_edge(str(i), str((i + j) % n))

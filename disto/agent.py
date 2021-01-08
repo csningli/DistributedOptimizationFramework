@@ -337,6 +337,9 @@ class AdoptAgent(Agent) :
         self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.context = {}
+        self.LB = - math.INF
+        self.UB = math.INF
+        self.threshold = self.LB
 
     def process(self, msgs) :
         result = {"msgs" : []}

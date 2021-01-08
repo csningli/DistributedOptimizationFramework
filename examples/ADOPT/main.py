@@ -41,8 +41,8 @@ if __name__ == "__main__" :
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
     var_host = get_var_host(avars = avars)
-
-    cons_graph = get_constraint_graph(pro = pro, var_host = var_host)
+    
+    cons_graph = get_constraint_graph(pro = pro, avars = avars)
     pseudo_tree = get_pseudo_tree(graph = cons_graph)
 
     # print(avars)

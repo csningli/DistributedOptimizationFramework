@@ -1,5 +1,5 @@
 
-import os, copy, numpy, math
+import os, copy, numpy, math, itertools
 
 from disto.problem import *
 from disto.monitor import *
@@ -336,11 +336,41 @@ class AdoptAgent(Agent) :
         self.children = children
         self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.context = {}
-        self.LB = - math.inf
-        self.UB = math.inf
         self.threshold = self.LB
+        self.current_context = {}
+        self.lb = {}
+        self.ub = {}
+        self.t = {}
+        self.context = {}
+        for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+            for child in self.children :
+                self.lb[(d, child)] = 0
+                self.ub[(d, child)] = math.inf
+                self.t[(d, child)] = 0
+                self.context[(d, child)] = {}
+        self.assign = self.update_assign()
 
     def process(self, msgs) :
         result = {"msgs" : []}
         return result
+
+    def get_LB(self, d = None) :
+        LB = None
+        return LB
+
+    def get_UB(self, d = None) :
+        UB = None
+        return UB
+
+    def update_assign(self) :
+        assign = {}
+        d_min = None
+        lb_d_min = math.inf
+        for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+            LB = self.get_LB(d = d)
+            if LB < lb_d_min :
+                lb_d_min = LB
+                d_min = d
+        if d_min is not None :
+            assign = {self.sorted_vars[i] : d_min[i] for i in range(len(self.sorted_vars))}
+        return assign

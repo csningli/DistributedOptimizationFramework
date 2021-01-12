@@ -354,6 +354,9 @@ class AdoptAgent(Agent) :
         result = {"msgs" : []}
         return result
 
+    def get_delta(self, d) :
+        return delta
+
     def get_LB(self, d = None) :
         LB = None
         return LB

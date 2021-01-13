@@ -336,7 +336,7 @@ class AdoptAgent(Agent) :
         self.children = children
         self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.threshold = self.LB
+        self.threshold = 0
         self.current_context = {}
         self.lb = {}
         self.ub = {}
@@ -355,14 +355,54 @@ class AdoptAgent(Agent) :
         return result
 
     def get_delta(self, d) :
+        delta = 0
+        assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
+        cpa = {**self.current_context, **assign}
+        for con in self.pro.cons :
+            x = fit_assign_to_con(cpa, con)
+            if x is None :
+                delta = math.inf
+                break
+            else :
+                delta += con.cost(x)
         return delta
 
     def get_LB(self, d = None) :
-        LB = None
+        LB = math.inf
+        if d is not None :
+            LB = self.get_delta(d = d)
+            if LB < math.inf :
+                for child in self.children :
+                    LB += self.lb[(d, child)]
+        else :
+            for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+                LB_d = self.get_delta(d = d)
+                for child in self.children :
+                    if LB_d < LB :
+                        LB_d += self.lb[(d, child)]
+                    else :
+                        break
+                if LB_d < LB :
+                    LB = LB_d
         return LB
 
     def get_UB(self, d = None) :
-        UB = None
+        UB = math.inf
+        if d is not None :
+            UB = self.get_delta(d = d)
+            if UB < math.inf :
+                for child in self.children :
+                    UB += self.ub[(d, child)]
+        else :
+            for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+                UB_d = self.get_delta(d = d)
+                for child in self.children :
+                    if UB_d < UB :
+                        UB_d += self.ub[(d, child)]
+                    else :
+                        break
+                if UB_d < UB :
+                    UB = UB_d
         return UB
 
     def update_assign(self) :

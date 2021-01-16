@@ -110,17 +110,19 @@ def get_constraint_graph(pro, avars) :
     for con in pro.cons :
         for i in range(len(con.vars)) :
             for j in range(i + 1, len(con.vars)) :
-                if cons.vars[j] not in graph[cons.vars[i]] :
-                    graph[cons.vars[i]].append(cons.vars[j])
-                if cons.vars[i] not in graph[cons.vars[j]] :
-                    graph[cons.vars[j]].append(cons.vars[i])
+                host_i = var_host(con.vars[i])
+                host_j = var_host(con.vars[j])
+                if host_j not in graph[host_i] :
+                    graph[host_i].append(host_j)
+                if host_i not in graph[host_j] :
+                    graph[host_j].append(host_i)
     return graph
 
 def get_pseudo_tree(graph) :
     # the tree is returned in a format of list, where the i-th entry contains a tuple
     # consisting of the parent and the list of children of node i.
     tree = [(None, []) for i in range(len(graph))]
-    visited = [False] * len(graph)
+    visited = [False for i in range(len(graph))]
     queue = [(None, 0)]
     while len(queue) > 0 :
         parent, node = queue.pop()
@@ -129,7 +131,7 @@ def get_pseudo_tree(graph) :
                 tree[node] = (parent, [])
                 if node not in tree[parent][1] :
                     tree[parent][1].append(node)
-            for nb in graph[stand] :
+            for nb in graph[node] :
                 if visited[nb] == False :
                     queue.append((node, nb))
             visited[node] = True

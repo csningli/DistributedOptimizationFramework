@@ -1,5 +1,5 @@
 
-import os, copy, numpy, math
+import os, copy, numpy, math, itertools
 
 from disto.problem import *
 from disto.monitor import *
@@ -336,9 +336,19 @@ class AdoptAgent(Agent) :
         self.children = children
         self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
+        self.threshold = 0
+        self.current_context = {}
+        self.lb = {}
+        self.ub = {}
+        self.t = {}
         self.context = {}
-        self.td = {}
-        self.ld = {}
+        for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+            for child in self.children :
+                self.lb[(d, child)] = 0
+                self.ub[(d, child)] = math.inf
+                self.t[(d, child)] = 0
+                self.context[(d, child)] = {}
+        self.assign = self.update_assign()
 
     def process(self, msgs) :
         result = {"msgs" : []}
@@ -398,3 +408,67 @@ class AdoptAgent(Agent) :
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
+
+    def get_delta(self, d) :
+        delta = 0
+        assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
+        cpa = {**self.current_context, **assign}
+        for con in self.pro.cons :
+            x = fit_assign_to_con(cpa, con)
+            if x is None :
+                delta = math.inf
+                break
+            else :
+                delta += con.cost(x)
+        return delta
+
+    def get_LB(self, d = None) :
+        LB = math.inf
+        if d is not None :
+            LB = self.get_delta(d = d)
+            if LB < math.inf :
+                for child in self.children :
+                    LB += self.lb[(d, child)]
+        else :
+            for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+                LB_d = self.get_delta(d = d)
+                for child in self.children :
+                    if LB_d < LB :
+                        LB_d += self.lb[(d, child)]
+                    else :
+                        break
+                if LB_d < LB :
+                    LB = LB_d
+        return LB
+
+    def get_UB(self, d = None) :
+        UB = math.inf
+        if d is not None :
+            UB = self.get_delta(d = d)
+            if UB < math.inf :
+                for child in self.children :
+                    UB += self.ub[(d, child)]
+        else :
+            for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+                UB_d = self.get_delta(d = d)
+                for child in self.children :
+                    if UB_d < UB :
+                        UB_d += self.ub[(d, child)]
+                    else :
+                        break
+                if UB_d < UB :
+                    UB = UB_d
+        return UB
+
+    def update_assign(self) :
+        assign = {}
+        d_min = None
+        lb_d_min = math.inf
+        for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+            LB = self.get_LB(d = d)
+            if LB < lb_d_min :
+                lb_d_min = LB
+                d_min = d
+        if d_min is not None :
+            assign = {self.sorted_vars[i] : d_min[i] for i in range(len(self.sorted_vars))}
+        return assign

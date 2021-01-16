@@ -337,7 +337,64 @@ class AdoptAgent(Agent) :
         self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.context = {}
+        self.td = {}
+        self.ld = {}
 
     def process(self, msgs) :
         result = {"msgs" : []}
+        if len(self.sorted_vars) > 0 :
+            if self.prev is None and self.assign[self.sorted_vars[0]] is None :
+                self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                self.log("start/init cpa")
+                if self.assign is None :
+                    result["msgs"].append(SysMessage(src = self.id, content = None))
+                else :
+                    self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                    while self.assign is not None and self.cpa_cost + cost > self.upper :
+                        self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
+                        self.assign, cost, violated = self.fix_assign(pro = self.pro, assign = self.assign, order_list = self.sorted_vars)
+                    if self.assign is None :
+                        result["msgs"].append(SysMessage(src = self.id, content = None))
+                    else :
+                        if self.next is None :
+                            result["msgs"].append(SysMessage(src = self.id, content = (copy.deepcopy(self.assign), cost, self.upper)))
+                            result["msgs"].append(SysMessage(src = self.id, content = None))
+                        else :
+                            result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = (copy.deepcopy(self.assign), cost, self.upper)))
+            elif len(msgs) > 0 :
+                msg = msgs[0]
+                self.log_msg("receive", msg)
+                if msg.src == self.prev :
+                    self.cpa = copy.deepcopy(msg.content[0])
+                    self.cpa_cost = msg.content[1]
+                    self.upper = msg.content[2]
+                    if self.assign[self.sorted_vars[0]] is None :
+                        self.assign = self.init_assign(vars = self.pro.vars, order_list = self.sorted_vars)
+                elif msg.src == self.tail and msg.content is not None :
+                    self.best = msg.content[0]
+                    self.upper = msg.content[1]
+                    self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
+                elif msg.src == self.next :
+                    self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
+
+                if self.assign is None :
+                    result["msgs"] += self.backtrack()
+                else :
+                    cpa = {**self.cpa, **self.assign}
+                    cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                    while self.assign is not None and self.cpa_cost + cost > self.upper :
+                        self.assign = self.next_assign(self.assign, vars = self.pro.vars, order_list = self.sorted_vars)
+                        cpa = {**self.cpa, **self.assign}
+                        cpa, cost, violated = self.fix_assign(pro = self.pro, assign = cpa, order_list = self.sorted_vars)
+                    if self.assign is None :
+                        result["msgs"] += self.backtrack()
+                    else :
+                        for var in self.assign.keys() :
+                            self.assign[var] = cpa[var]
+                        if self.next is None :
+                            result["msgs"].append(CommMessage(src = self.id, dest = self.head, content = (copy.deepcopy(cpa), self.cpa_cost + cost, self.upper)))
+                        else :
+                            result["msgs"].append(CommMessage(src = self.id, dest = self.next, content = (copy.deepcopy(cpa), self.cpa_cost + cost, self.upper)))
+            for msg in result["msgs"] :
+                self.log_msg("send", msg)
         return result

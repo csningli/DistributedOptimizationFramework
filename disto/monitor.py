@@ -43,6 +43,26 @@ class LinkMessage(CommMessage) :
     def __init__(self, src, dest, content) :
         super(LinkMessage, self).__init__(src = src, dest = dest, content = content)
 
+class TerminateMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(TerminateMessage, self).__init__(src = src, dest = dest, content = content)
+
+class ThresholdMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(ThresholdMessage, self).__init__(src = src, dest = dest, content = content)
+
+class CostMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(CostMessage, self).__init__(src = src, dest = dest, content = content)
+
+class ValueMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(ValueMessage, self).__init__(src = src, dest = dest, content = content)
+
+class DoneMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(DoneMessage, self).__init__(src = src, dest = dest, content = content)
+
 class SysMessage(Message) :
     def __init__(self, src, content) :
         super(SysMessage, self).__init__(src = src, dest = None, content = content)

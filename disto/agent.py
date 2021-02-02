@@ -390,10 +390,10 @@ class AdoptAgent(Agent) :
                         self.maintainThresholdInvariant()
                         self.backtrack_needed = True
                     if isinstance(msg, CostMessage) :
-                        d = []
+                        d = tuple([msg.content[1].get(var, None) for var in self.sorted_vars])
                         for var in self.sorted_vars :
-                            d.append(msg.content[1].get(var, None))
                             del msg.content[1][var]
+                        d = tuple(d)
                         if self.terminate == False :
                             for var, value in msg.content[1].items() :
                                 if self.var_host(var) not in self.children + [self.parent] :
@@ -421,9 +421,7 @@ class AdoptAgent(Agent) :
                     self.assign = self.update_assign(bound_func = self.get_LB)
                 for id in self.children :
                     result["msgs"].append(ValueMessage(src = self.id, dest = id, content = self.assign))
-                msgs = self.maintainAllocationInvariant()
-                for msg in msgs :
-                    results["msgs"].append(msgs)
+                result["msgs"] += self.maintainAllocationInvariant()
                 if self.threshold > UB - 1e-6 :
                     if self.terminate == True or self.parent is None :
                         self.done = True
@@ -505,6 +503,8 @@ class AdoptAgent(Agent) :
                 d_min = d
         if d_min is not None :
             assign = {self.sorted_vars[i] : d_min[i] for i in range(len(self.sorted_vars))}
+        else :
+            assign = {var : self.pro.vars[var].first_value() for var in self.sorted_vars}
         return assign
 
     def maintainThresholdInvariant(self) :
@@ -517,13 +517,13 @@ class AdoptAgent(Agent) :
 
     def maintainAllocationInvariant(self) :
         msgs = []
-        d = [self.assign[var] for var in self.sorted_vars]
+        d = tuple([self.assign[var] for var in self.sorted_vars])
         delta = self.get_delta(d = d)
         while self.threshold > delta + sum([self.t[(d, child)] for child in self.children]) :
             updated = False
             for child in self.children :
                 if self.ub[(d, child)] > self.t[(d, child)] :
-                    inc = min(self.ub[(d, child)] - self.t[(d, child)], self.threshold - delta - sum([self.t[(d, child)]))
+                    inc = min(self.ub[(d, child)] - self.t[(d, child)], self.threshold - delta - sum([self.t[(d, child)] for child in self.children]))
                     self.t[(d, child)] += inc
                     updated = True
                     break
@@ -533,7 +533,7 @@ class AdoptAgent(Agent) :
             updated = False
             for child in self.children :
                 if self.lb[(d, child)] < self.t[(d, child)] :
-                    dec = min(self.t[(d, child)] - self.lb[(d, child)],  delta + sum([self.t[(d, child)]) - self.threshold)
+                    dec = min(self.t[(d, child)] - self.lb[(d, child)],  delta + sum([self.t[(d, child)] for child in self.children]) - self.threshold)
                     self.t[(d, child)] -= dec
                     updated = True
                     break

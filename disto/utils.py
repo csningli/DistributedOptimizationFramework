@@ -93,7 +93,7 @@ def check_dict_compatible(d1, d2) : # return True iff d1 and d2 have the same va
             break
     return result
 
-def check_dict_contained(d1, d2) : # return True ff the key-values in d1 are defined in the same way in d2.
+def check_dict_contained(d1, d2) : # return True if the key-values in d1 are defined in the same way in d2.
     result = True
     for key, value in d1.items() :
         if key not in d2 or value != d2[key] :

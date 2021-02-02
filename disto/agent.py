@@ -390,10 +390,10 @@ class AdoptAgent(Agent) :
                         self.maintainThresholdInvariant()
                         self.backtrack_needed = True
                     if isinstance(msg, CostMessage) :
-                        d = tuple([msg.content[1].get(var, None) for var in self.sorted_vars])
+                        d = tuple([msg.content[1].get(var, self.assign[var]) for var in self.sorted_vars])
                         for var in self.sorted_vars :
-                            del msg.content[1][var]
-                        d = tuple(d)
+                            if var in msg.content[1].keys() :
+                                del msg.content[1][var]
                         if self.terminate == False :
                             for var, value in msg.content[1].items() :
                                 if self.var_host(var) not in self.children + [self.parent] :

@@ -65,7 +65,7 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    time_cost = monitor.run(agents = agents, timeout = 1)
+    time_cost = monitor.run(agents = agents, timeout = 0.1)
     print("Time cost: %s" % time_cost)
     print("-" * 50)
     print("Monitor.mem: %s" % monitor.mem)
@@ -76,6 +76,6 @@ if __name__ == "__main__" :
         cost, _ = total_cost(cons = pro.cons, assign = final)
         print("Cost: %s" % cost)
         print("-" * 50)
-    # view_logs(log_dir = log_dir, style = "timeline")
+    view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

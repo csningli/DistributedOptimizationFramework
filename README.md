@@ -32,3 +32,5 @@ By default, calling "run.sh" without any arguments runs all the tests.
 
 ## Run on Windows
 On Windows, use "run_win.sh" in stead of "run.sh".
+
+*NOTE* Currently, the Monitor works only for the Linux-like OS, and the examples are tested under macOS.

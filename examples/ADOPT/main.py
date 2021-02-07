@@ -1,5 +1,5 @@
 
-import os, math, functools
+import os, math, functools, copy
 import networkx as nx
 
 from disto.problem import total_cost, GraphColoringProblem

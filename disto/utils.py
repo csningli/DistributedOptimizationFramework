@@ -76,14 +76,15 @@ def view_logs(log_dir, style = "agentbase") :
     else :
         print("Invalid style: %s." % style)
 
+def dict_get_wrapper(key, d, default_value) :
+    return d.get(key, default_value)
+
 def get_var_host(avars) :
     var_mapping = {}
     for i, vars in enumerate(avars) :
         for var in vars :
            var_mapping[var] = i
-    def var_host_with_mapping(var, var_mapping) :
-        return var_mapping.get(var, None)
-    return functools.partial(var_host_with_mapping, var_mapping = var_mapping)
+    return functools.partial(dict_get_wrapper, d = var_mapping, default_value = None)
 
 def check_dict_compatible(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
     result = True

@@ -13,6 +13,9 @@ To run an example in the directory "examples", call
 
     ./run.sh examples/directory_of_example/file_name_without_extention_py
 
+*NOTE*: Before running an example script, you need a directory named "logs" in the same path with
+"run.sh", which is used to save the agent logs.
+
 For example, the following command runs "examples/SyncBT/main.py".
 
     ./run.sh examples/SyncBT/main

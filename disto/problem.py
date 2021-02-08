@@ -207,9 +207,8 @@ class GraphColoringProblem(Problem) :
     def __init__(self, graph, num_colors = 4, violation_cost = False) :
         self.graph = graph
         self.num_colors = num_colors
-        domain = Domain(values = [i for i in range(self.num_colors)])
         n = self.graph.number_of_nodes()
-        vars = {"%d" % i : domain for i in range(n)}
+        vars = {"%d" % i : Domain(values = [i for i in range(self.num_colors)]) for i in range(n)}
         cons = []
         con_cls = BinaryDiffConstraint if violation_cost == False else BinaryDiffCost
         for edge in self.graph.edges :

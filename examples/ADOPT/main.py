@@ -25,7 +25,7 @@ if __name__ == "__main__" :
     for i in range(n) :
         graph.add_node(str(i))
 
-    d = 3
+    d = 2
     for i in range(n) :
         for j in range(1, d + 1) :
             graph.add_edge(str(i), str((i + j) % n))
@@ -51,7 +51,8 @@ if __name__ == "__main__" :
         ids = set([var_host(var) for var in con.vars])
         return [max(ids)]
 
-    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
+    # sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
+    sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :
         agents.append(AdoptAgent(id = i, pro = sub_pros[i],
@@ -65,17 +66,18 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    time_cost = monitor.run(agents = agents, timeout = 0.1)
+    time_cost = monitor.run(agents = agents, timeout = 1)
     print("Time cost: %s" % time_cost)
     print("-" * 50)
     print("Monitor.mem: %s" % monitor.mem)
     print("-" * 50)
     if len(monitor.mem) > 0 :
-        final = monitor.mem[-1]
+        final = {}
+        for assign in monitor.mem :
+            final = {**final, **assign}
         print("Final: %s" % final)
         cost, _ = total_cost(cons = pro.cons, assign = final)
         print("Cost: %s" % cost)
         print("-" * 50)
-    view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

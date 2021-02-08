@@ -336,7 +336,7 @@ class AdoptAgent(Agent) :
         self.children = children
         self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.children_done = {False for i in range(len(self.children))}
+        self.children_done = {id : False for id in self.children}
         self.backtrack_needed = False    # True if backtrack is needed
         self.done = False       # True if the agent stops renewing the local assignment
         self.terminate = False  # True if received TERMINATE message from the parent
@@ -372,14 +372,15 @@ class AdoptAgent(Agent) :
                         self.backtrack_needed = True
                     elif isinstance(msg, DoneMessage) :
                         self.children_done[msg.src] = True
-                        if False not in self.children_done :
+                        if False not in self.children_done.values() :
                             if self.parent is None :
                                 result["msgs"].append(SysMessage(src = self.id, content = None))
                             else :
                                 result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
                 for msg in msgs :
                     if isinstance(msg, ValueMessage) and self.terminate == False :
-                        self.current_context = {**self.current_context, **msg.content}
+                        for var, value in msg.content.items() :
+                            self.current_context[var] = value
                         for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
                             for child in self.children :
                                 if check_dict_compatible(self.context[(d, child)], self.current_context) == False :
@@ -412,13 +413,15 @@ class AdoptAgent(Agent) :
                             self.maintainChildThresholdInvariant()
                             self.maintainThresholdInvariant()
                         self.backtrack_needed = True
+
             if self.done == False and self.backtrack_needed == True :
                 UB = self.get_UB()
                 LB = self.get_LB()
                 if self.threshold > UB - 1e-6 :
                     self.assign = self.update_assign(bound_func = self.get_UB)
-                elif self.threshold > LB + 1e-6 :
+                elif self.threshold < LB + 1e-6 :
                     self.assign = self.update_assign(bound_func = self.get_LB)
+                self.log("update/%s/%s" % (self.id, self.assign))
                 for id in self.children :
                     result["msgs"].append(ValueMessage(src = self.id, dest = id, content = self.assign))
                 result["msgs"] += self.maintainAllocationInvariant()
@@ -447,10 +450,7 @@ class AdoptAgent(Agent) :
         cpa = {**self.current_context, **assign}
         for con in self.pro.cons :
             x = fit_assign_to_con(cpa, con)
-            if x is None :
-                delta = math.inf
-                break
-            else :
+            if x is not None :
                 delta += con.cost(x)
         return delta
 

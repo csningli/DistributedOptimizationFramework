@@ -79,5 +79,6 @@ if __name__ == "__main__" :
         cost, _ = total_cost(cons = pro.cons, assign = final)
         print("Cost: %s" % cost)
         print("-" * 50)
+    view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
     print("Done.")

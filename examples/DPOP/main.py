@@ -53,7 +53,7 @@ if __name__ == "__main__" :
         agents.append(DpopAgent(id = i, pro = sub_pros[i],
             parent = pseudo_tree[i][0], children = pseudo_tree[i][1],
             pd_parents = pseudo_tree[i][2], pd_children = pseudo_tree[i][3],
-            var_host = var_host, log_dir = log_dir))
+            all_vars = pro.vars, avars = avars, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

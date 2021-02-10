@@ -553,13 +553,14 @@ class AdoptAgent(Agent) :
                     self.t[(d, child)] = self.ub[(d, child)]
 
 class DpopAgent(Agent) :
-    def __init__(self, id, pro, parent, children, pd_parents, pd_children, var_host, log_dir = "") :
+    def __init__(self, id, pro, parent, children, pd_parents, pd_children, all_vars, avars, log_dir = "") :
         super(DpopAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.parent = parent
         self.children = children
         self.pd_parents = pd_parents
         self.pd_children = pd_children
-        self.var_host = var_host
+        self.all_vars = all_vars 
+        self.avars = avars
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.trigger = True if len(self.children) < 1 else False
         self.utilities = {child : None for child in self.children}

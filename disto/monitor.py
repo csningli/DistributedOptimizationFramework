@@ -59,6 +59,10 @@ class ValueMessage(CommMessage) :
     def __init__(self, src, dest, content) :
         super(ValueMessage, self).__init__(src = src, dest = dest, content = content)
 
+class UtilMessage(CommMessage) :
+    def __init__(self, src, dest, content) :
+        super(UtilMessage, self).__init__(src = src, dest = dest, content = content)
+
 class DoneMessage(CommMessage) :
     def __init__(self, src, dest, content) :
         super(DoneMessage, self).__init__(src = src, dest = dest, content = content)

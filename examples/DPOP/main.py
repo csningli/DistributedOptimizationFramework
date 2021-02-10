@@ -7,9 +7,9 @@ from disto.agent import DpopAgent
 from disto.monitor import Monitor
 from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph, get_pseudo_tree
 
-# In this example, Asynchronous Distributed Optimization - Adopt (Pragnesh Jay Modi, Wei-Min Shen,
-# Milind Tambe, and Makoto Yokoo, "Adopt: Asynchronous Distributed Constraint Optimization with
-# Quality Guarantees", 2005 is used to solve the optimization version of the graph coloring problem,
+# In this example, the distributed pseudotree optimization procedure for general networksn - DPOP
+# (Adrian Petcu and Boi Faltings, "A Scalable Method for Multiagent Constraint Optimization",
+# is used to solve the optimization version of the graph coloring problem,
 # which is modeled in a DCOP form. In the problem, the cost is defined as the number of violated constraints.
 
 if __name__ == "__main__" :
@@ -25,7 +25,7 @@ if __name__ == "__main__" :
     for i in range(n) :
         graph.add_node(str(i))
 
-    d = 3
+    d = 2
     for i in range(n) :
         for j in range(1, d + 1) :
             graph.add_edge(str(i), str((i + j) % n))
@@ -42,20 +42,17 @@ if __name__ == "__main__" :
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
     var_host = get_var_host(avars = avars)
 
+    # print(avars)
+
     cons_graph = get_constraint_graph(pro = pro, avars = avars)
     pseudo_tree = get_pseudo_tree(graph = cons_graph)
 
-    # print(avars)
-
-    def con_host(con, var_host) :
-        ids = set([var_host(var) for var in con.vars])
-        return [max(ids)]
-
-    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
+    sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :
         agents.append(DpopAgent(id = i, pro = sub_pros[i],
             parent = pseudo_tree[i][0], children = pseudo_tree[i][1],
+            pd_parents = pseudo_tree[i][2], pd_children = pseudo_tree[i][3],
             var_host = var_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
@@ -71,11 +68,12 @@ if __name__ == "__main__" :
     print("Monitor.mem: %s" % monitor.mem)
     print("-" * 50)
     if len(monitor.mem) > 0 :
-        final = monitor.mem[-1]
+        final = {}
+        for assign in monitor.mem :
+            final = {**final, **assign}
         print("Final: %s" % final)
         cost, _ = total_cost(cons = pro.cons, assign = final)
         print("Cost: %s" % cost)
         print("-" * 50)
-    # view_logs(log_dir = log_dir, style = "timeline")
+    view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)
-    print("Done.")

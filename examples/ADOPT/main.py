@@ -42,16 +42,11 @@ if __name__ == "__main__" :
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
     var_host = get_var_host(avars = avars)
 
+    # print(avars)
+
     cons_graph = get_constraint_graph(pro = pro, avars = avars)
     pseudo_tree = get_pseudo_tree(graph = cons_graph)
 
-    # print(avars)
-
-    def con_host(con, var_host) :
-        ids = set([var_host(var) for var in con.vars])
-        return [max(ids)]
-
-    # sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :

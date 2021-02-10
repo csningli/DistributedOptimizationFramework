@@ -121,19 +121,25 @@ def get_constraint_graph(pro, avars) :
 
 def get_pseudo_tree(graph) :
     # the tree is returned in a format of list, where the i-th entry contains a tuple
-    # consisting of the parent and the list of children of node i.
-    tree = [(None, []) for i in range(len(graph))]
+    # consisting of the parent, the list of children, the list of pseudo parents,
+    # and the list of pseudo children, of node i.
+    tree = [(None, [], [], []) for i in range(len(graph))]
     visited = [False for i in range(len(graph))]
     queue = [(None, 0)]
     while len(queue) > 0 :
         parent, node = queue.pop()
         if visited[node] == False :
             if parent is not None :
-                tree[node] = (parent, [])
+                tree[node] = (parent, [], [], [])
                 if node not in tree[parent][1] :
                     tree[parent][1].append(node)
             for nb in graph[node] :
                 if visited[nb] == False :
                     queue.append((node, nb))
+                elif nb != parent :
+                    if nb not in tree[node][2] :
+                        tree[node][2].append(nb)
+                    if node not in tree[nb][3] :
+                        tree[nb][3].append(node)
             visited[node] = True
     return tree

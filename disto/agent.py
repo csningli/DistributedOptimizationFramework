@@ -553,7 +553,7 @@ class AdoptAgent(Agent) :
                     self.t[(d, child)] = self.ub[(d, child)]
 
 class DpopAgent(Agent) :
-    def __init__(self, id, pro, parent, children, var_host, log_dir = "") :
+    def __init__(self, id, pro, parent, children, pd_parents, pd_children, var_host, log_dir = "") :
         super(DpopAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.parent = parent
         self.children = children

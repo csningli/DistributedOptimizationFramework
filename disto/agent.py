@@ -559,7 +559,7 @@ class DpopAgent(Agent) :
         self.children = children
         self.pd_parents = pd_parents
         self.pd_children = pd_children
-        self.all_vars = all_vars 
+        self.all_vars = all_vars
         self.avars = avars
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
         self.trigger = True if len(self.children) < 1 else False
@@ -588,12 +588,17 @@ class DpopAgent(Agent) :
                                 result["msgs"].append(UtilMessage(src = self.id, dest = self.parent, content = self.compute_utility()))
                 for msg in msgs :
                     if isinstance(msg, ValueMessage) :
-                        self.value_updated = True
-
+                        pass
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
 
     def compute_utility(self) :
         u = {}
+        p_vars = self.avars[self.parent]
+        for pd_parent in self.pd_parents :
+            p_vars += self.avars[pd_parent]
+        for value in itertools.product(*[all_vars[var].values for var in pd_vars]) :
+            cpa = {pd_vars[i] : value[i] for i in range(len(pd_vars))}
+            ...
         return u

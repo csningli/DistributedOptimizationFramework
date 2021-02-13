@@ -562,6 +562,7 @@ class DpopAgent(Agent) :
         self.all_vars = all_vars
         self.avars = avars
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
+        self.children_done = {id : False for id in self.children}
         self.trigger = True if len(self.children) < 1 else False
         self.utilities = {child : None for child in self.children}
         self.view = {}
@@ -583,12 +584,32 @@ class DpopAgent(Agent) :
                         self.utilities[msg.src] = msg.content
                         if None not in self.utilities.values() :
                             if self.parent is None :
-                                pass
+                                self.assign = self.choose_optimal_assign()
+                                result["msgs"].append(SysMessage(src = self.id, content = self.assign))
+                                for id in self.children :
+                                    result["msgs"].append(ValueMessage(src = self.id, dest = id, content = self.assign))
                             else :
                                 result["msgs"].append(UtilMessage(src = self.id, dest = self.parent, content = self.compute_utility()))
+                    elif isinstance(msg, DoneMessage) :
+                        self.children_done[msg.src] = True
+                        if False not in self.children_done.values() :
+                            if self.parent is not None :
+                                result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
+                            else :
+                                result["msgs"].append(SysMessage(src = self.id, content = None))
                 for msg in msgs :
                     if isinstance(msg, ValueMessage) :
-                        pass
+                        self.view = {**self.view, **msg.content}
+                        self.assign = self.choose_optimal_assign()
+                        result["msgs"].append(SysMessage(src = self.id, content = self.assign))
+                        if len(self.children) > 0 :
+                            for id in self.children :
+                                result["msgs"].append(ValueMessage(src = self.id, dest = id, content = self.assign))
+                        else :
+                            if self.parent is not None :
+                                result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
+                            else :
+                                result["msgs"].append(SysMessage(src = self.id, content = None))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
@@ -600,5 +621,31 @@ class DpopAgent(Agent) :
             p_vars += self.avars[pd_parent]
         for value in itertools.product(*[all_vars[var].values for var in pd_vars]) :
             cpa = {pd_vars[i] : value[i] for i in range(len(pd_vars))}
-            ...
+            min_cost, min_assign = math.inf, None
+            for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+                assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
+                cost = self.calc_cost(cpa, assign)
+                if cost < min_cost or min_assign is None :
+                    min_cost, min_assign = cost, copy.deepcopy(assign)
+            u[get_key_value_tuples_from_dict(cpa)] = min_cost
         return u
+
+    def choose_optimal_assign(self) :
+        min_cost, min_assign = math.inf, None
+        for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
+            assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
+            cpa = {**self.view, **assign}
+            cost = 0
+            for child in self.children :
+                cost += self.utilities[child].get(get_key_value_tuples_from_dict({**self.view, **assign}), math.inf)
+            if cost < min_cost or min_assign is None :
+                min_cost, min_assign = cost, copy.deepcopy(assign)
+        return min_assign
+
+    def calc_cost(self, cpa, assign) :
+        cost = 0
+        for con in self.pro.cons :
+            x = fit_assign_to_con({**cpa, **assign}, con)
+            if x is not None :
+                cost += con.cost(x)
+        return cost

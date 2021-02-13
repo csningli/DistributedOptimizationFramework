@@ -143,3 +143,9 @@ def get_pseudo_tree(graph) :
                         tree[nb][3].append(node)
             visited[node] = True
     return tree
+
+def get_key_value_tuples_from_dict(d) :
+    return ((key, d[key]) for key in sorted(list(d.keys)))
+
+def get_dict_from_key_value_tuples(tuples) :
+    return {t[0] : t[1] for t in tuples}

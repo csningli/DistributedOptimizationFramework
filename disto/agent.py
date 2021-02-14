@@ -658,106 +658,28 @@ class DpopAgent(Agent) :
         return  ValueMessage(src = self.id, dest = child, content = cpa)
 
 class MaxSumAgent(Agent) :
-    def __init__(self, id, pro, parent, children, pd_parents, pd_children, all_vars, avars, log_dir = "") :
+    def __init__(self, id, pro, round_limit, neighbors, var_host, log_dir = "") :
         super(MaxSumAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
-        self.parent = parent
-        self.children = children
-        self.pd_parents = pd_parents
-        self.pd_children = pd_children
-        self.all_vars = all_vars
-        self.avars = avars
+        self.round_limit = round_limit
+        self.neighbors = neighbors
+        self.var_host = var_host
         self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.children_done = {id : False for id in self.children}
-        self.trigger = True if len(self.children) < 1 else False
-        self.utilities = {child : None for child in self.children}
-        self.view = {}
+        self.v2f = {}
+        self.f2v = {}
+        self.round = 0
 
     def process(self, msgs) :
         result = {"msgs" : []}
         if len(self.sorted_vars) > 0 :
-            if self.trigger == True :
-                self.log("trigger/%s" % self.id)
-                if self.parent is None :
-                    result["msgs"].append(SysMessage(src = self.id, content = None))
-                else :
-                    result["msgs"].append(UtilMessage(src = self.id, dest = self.parent, content = self.compute_utility()))
-                self.trigger = False
+            if self.round < 1 :
+                pass
             elif len(msgs) > 0 :
                 for msg in msgs :
                     self.log_msg("receive", msg)
-                    if isinstance(msg, UtilMessage) and msg.dest == self.id :
-                        self.utilities[msg.src] = msg.content
-                        if None not in self.utilities.values() :
-                            if self.parent is None :
-                                self.assign = self.choose_optimal_assign()
-                                result["msgs"].append(SysMessage(src = self.id, content = self.assign))
-                                for id in self.children :
-                                    result["msgs"].append(self.get_value_msg(child = id))
-                            else :
-                                result["msgs"].append(UtilMessage(src = self.id, dest = self.parent, content = self.compute_utility()))
-                    elif isinstance(msg, DoneMessage) :
-                        self.children_done[msg.src] = True
-                        if False not in self.children_done.values() :
-                            if self.parent is not None :
-                                result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
-                            else :
-                                result["msgs"].append(SysMessage(src = self.id, content = None))
-                for msg in msgs :
-                    if isinstance(msg, ValueMessage) :
-                        self.view = {**self.view, **msg.content}
-                        self.assign = self.choose_optimal_assign()
-                        result["msgs"].append(SysMessage(src = self.id, content = self.assign))
-                        if len(self.children) > 0 :
-                            for id in self.children :
-                                result["msgs"].append(self.get_value_msg(child = id))
-                        else :
-                            if self.parent is not None :
-                                result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
-                            else :
-                                result["msgs"].append(SysMessage(src = self.id, content = None))
+                    if isinstance(msg, Value2FuctionMessage) :
+                        pass
+                    elif isinstance(msg, Function2ValueMessage) :
+                        pass
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
-
-    def compute_utility(self) :
-        u = {}
-        p_vars = self.avars[self.parent]
-        for pd_parent in self.pd_parents :
-            p_vars += self.avars[pd_parent]
-        for value in itertools.product(*[self.all_vars[var].values for var in p_vars]) :
-            cpa = {p_vars[i] : value[i] for i in range(len(p_vars))}
-            min_cost, min_assign = math.inf, None
-            for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
-                assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
-                cost = self.calc_cost(cpa, assign)
-                if cost < min_cost or min_assign is None :
-                    min_cost, min_assign = cost, copy.deepcopy(assign)
-            u[get_key_value_tuples_from_dict(cpa)] = min_cost
-        return u
-
-    def choose_optimal_assign(self) :
-        min_cost, min_assign = math.inf, None
-        for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
-            assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
-            cost = self.calc_cost(self.view, assign)
-            for child in self.children :
-                cost += self.utilities[child].get(get_key_value_tuples_from_dict({**self.view, **assign}), math.inf)
-            if cost < min_cost or min_assign is None :
-                min_cost, min_assign = cost, copy.deepcopy(assign)
-        return min_assign
-
-    def calc_cost(self, cpa, assign) :
-        cost = 0
-        for con in self.pro.cons :
-            x = fit_assign_to_con({**cpa, **assign}, con)
-            if x is not None :
-                cost += con.cost(x)
-        return cost
-
-    def get_value_msg(self, child) :
-        cpa = copy.deepcopy(self.assign)
-        child_pd_vars = get_dict_from_key_value_tuples(list(self.utilities[child].keys())[0])
-        for var, value in self.view.items() :
-            if var in child_pd_vars :
-                cpa[var] = value
-        return  ValueMessage(src = self.id, dest = child, content = cpa)

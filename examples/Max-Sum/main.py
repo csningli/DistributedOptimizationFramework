@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import MaxSumAgent
 from disto.monitor import Monitor
-from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph, get_factor_graph
+from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph
 
 # In this example, Max-Sum # (A. Farinelli, A. Rogers, A. Petcu†, and N. R. Jennings,
 # "Decentralised Coordination of Low-Power Embedded Devices Using the Max-Sum Algorithm")
@@ -45,7 +45,6 @@ if __name__ == "__main__" :
     # print(avars)
 
     cons_graph = get_constraint_graph(pro = pro, avars = avars)
-    pseudo_tree = get_pseudo_tree(graph = cons_graph)
 
     def con_host(con, var_host) :
         ids = set([var_host(var) for var in con.vars])
@@ -54,7 +53,7 @@ if __name__ == "__main__" :
     sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     agents = []
     for i in range(m) :
-        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], neighbors = cons_graph[i], var_host = var_host, log_dir = log_dir))
+        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], round_limit = 10, neighbors = cons_graph[i], var_host = var_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

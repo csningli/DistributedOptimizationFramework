@@ -587,7 +587,7 @@ class DpopAgent(Agent) :
                                 self.assign = self.choose_optimal_assign()
                                 result["msgs"].append(SysMessage(src = self.id, content = self.assign))
                                 for id in self.children :
-                                    result["msgs"].append(ValueMessage(src = self.id, dest = id, content = self.assign))
+                                    result["msgs"].append(self.get_value_msg(child = id))
                             else :
                                 result["msgs"].append(UtilMessage(src = self.id, dest = self.parent, content = self.compute_utility()))
                     elif isinstance(msg, DoneMessage) :
@@ -604,7 +604,7 @@ class DpopAgent(Agent) :
                         result["msgs"].append(SysMessage(src = self.id, content = self.assign))
                         if len(self.children) > 0 :
                             for id in self.children :
-                                result["msgs"].append(ValueMessage(src = self.id, dest = id, content = self.assign))
+                                result["msgs"].append(self.get_value_msg(child = id))
                         else :
                             if self.parent is not None :
                                 result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
@@ -619,8 +619,8 @@ class DpopAgent(Agent) :
         p_vars = self.avars[self.parent]
         for pd_parent in self.pd_parents :
             p_vars += self.avars[pd_parent]
-        for value in itertools.product(*[all_vars[var].values for var in pd_vars]) :
-            cpa = {pd_vars[i] : value[i] for i in range(len(pd_vars))}
+        for value in itertools.product(*[self.all_vars[var].values for var in p_vars]) :
+            cpa = {p_vars[i] : value[i] for i in range(len(p_vars))}
             min_cost, min_assign = math.inf, None
             for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
                 assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
@@ -634,8 +634,7 @@ class DpopAgent(Agent) :
         min_cost, min_assign = math.inf, None
         for d in itertools.product(*[self.pro.vars[var].values for var in self.sorted_vars]) :
             assign = {self.sorted_vars[i] : d[i] for i in range(len(self.sorted_vars))}
-            cpa = {**self.view, **assign}
-            cost = 0
+            cost = self.calc_cost(self.view, assign)
             for child in self.children :
                 cost += self.utilities[child].get(get_key_value_tuples_from_dict({**self.view, **assign}), math.inf)
             if cost < min_cost or min_assign is None :
@@ -649,3 +648,11 @@ class DpopAgent(Agent) :
             if x is not None :
                 cost += con.cost(x)
         return cost
+
+    def get_value_msg(self, child) :
+        cpa = copy.deepcopy(self.assign)
+        child_pd_vars = get_dict_from_key_value_tuples(list(self.utilities[child].keys())[0])
+        for var, value in self.view.items() :
+            if var in child_pd_vars :
+                cpa[var] = value
+        return  ValueMessage(src = self.id, dest = child, content = cpa)

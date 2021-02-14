@@ -658,6 +658,11 @@ class DpopAgent(Agent) :
         return  ValueMessage(src = self.id, dest = child, content = cpa)
 
 class MaxSumAgent(Agent) :
+    # In this implementation, the agent is responsible for hosting both of the variable nodes and the function nodes.
+    # The messages between the variable nodes and the function nodes are now divided into
+    # 1. the inner-agent "messages", which are defined to follow the idea of message propagation approach of MaxSum, and
+    # 2. the inter-agent "messages", which packing the varaible to function messages and the function to variable messages
+    #   that are required to send to the other agents.
     def __init__(self, id, pro, round_limit, neighbors, var_host, log_dir = "") :
         super(MaxSumAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.round_limit = round_limit

@@ -43,14 +43,14 @@ if __name__ == "__main__" :
     # print(avars)
 
     var_host = get_var_host(avars = avars)
-    var_nodes, fun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode)
+    var_nodes, fun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode, all_vars = pro.vars)
 
     sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :
         agents.append(MaxSumAgent(id = i, pro = sub_pros[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10, var_host = var_host, fun_host = fun_host, log_dir = log_dir))
         for var_node in agents[-1].var_nodes.values() :
-            var_node.fnb_msgs = {fnb.name : MaxSumAgent.Function2VariableMessage(src = fnb.name, dest = var_node.var, content = 1) for fnb in var_node.fnbs}
+            var_node.fnb_msgs = {fnb.name : ("f2v", fnb.name, var_node.var, [1] * len(var_node.domain.values)) for fnb in var_node.fnbs}
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

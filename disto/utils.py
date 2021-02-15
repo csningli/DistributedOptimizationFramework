@@ -86,14 +86,14 @@ def get_var_host(avars) :
            var_mapping[var] = i
     return functools.partial(dict_get_wrapper, d = var_mapping, default_value = None)
 
-def get_factor_nodes(pro, avars, var_node_cls, fun_node_cls) :
+def get_factor_nodes(pro, avars, var_node_cls, fun_node_cls, all_vars) :
     var_host = get_var_host(avars = avars)
     fun_neighbors = {var : [] for var in pro.vars.keys()}
     fun_nodes = [{} for i in range(len(avars))]
     fun_mapping = {}
     for i, con in enumerate(pro.cons) :
         host = max(set([var_host(var) for var in con.vars]))
-        fun_nodes[host][i] = fun_node_cls(name = i, con = con)
+        fun_nodes[host][i] = fun_node_cls(name = i, con = con, all_vars = all_vars)
         fun_mapping[i] = host
         for var in con.vars :
             if fun_nodes[host][i] not in fun_neighbors[var] :

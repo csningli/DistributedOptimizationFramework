@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import MaxSumAgent
 from disto.monitor import Monitor
-from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph
+from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph, get_factor_nodes
 
 # In this example, Max-Sum # (A. Farinelli, A. Rogers, A. Petcu†, and N. R. Jennings,
 # "Decentralised Coordination of Low-Power Embedded Devices Using the Max-Sum Algorithm")
@@ -40,26 +40,17 @@ if __name__ == "__main__" :
 
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
-    var_host = get_var_host(avars = avars)
-
     # print(avars)
 
-    cons_graph = get_constraint_graph(pro = pro, avars = avars)
+    var_host = get_var_host(avars = avars)
+    var_nodes, fun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode)
 
-    fun_neighbors = {var : []] for var in pro.vars.keys()}
-    fun_nodes = [[] for i in range(m)]
-    for i, con in enumerate(pro.cons) :
-        fun_node = MaxSumAgent.FunctionNode(name = i, con = con)
-        for var in con.vars :
-            if i not in fun_neighbors[var] :
-                fun_neighbors[var].append(i)
-    var_nodes = [[MaxSumAgent(var = var, domain = pro.vars[var], fnbs = fun_neighbors[var]) for var in avars[i]] for i in range(m)]
-
+    sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :
-        agents.append(MaxSumAgent(id = i, neighbors = cons_graph[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10, log_dir = log_dir))
-        for var_node in agents[-1].var_nodes :
-            var_node.fnb_msgs = [Function2ValueMessage(src = fnb.name, dest = var_node.var, content = 1) for fnb in var_node.fnbs]
+        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10, var_host = var_host, fun_host = fun_host, log_dir = log_dir))
+        for var_node in agents[-1].var_nodes.values() :
+            var_node.fnb_msgs = {fnb.name : MaxSumAgent.Function2VariableMessage(src = fnb.name, dest = var_node.var, content = 1) for fnb in var_node.fnbs}
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

@@ -86,6 +86,22 @@ def get_var_host(avars) :
            var_mapping[var] = i
     return functools.partial(dict_get_wrapper, d = var_mapping, default_value = None)
 
+def get_factor_nodes(pro, avars, var_node_cls, fun_node_cls) :
+    var_host = get_var_host(avars = avars)
+    fun_neighbors = {var : [] for var in pro.vars.keys()}
+    fun_nodes = [{} for i in range(len(avars))]
+    fun_mapping = {}
+    for i, con in enumerate(pro.cons) :
+        host = max(set([var_host(var) for var in con.vars]))
+        fun_nodes[host][i] = fun_node_cls(name = i, con = con)
+        fun_mapping[i] = host
+        for var in con.vars :
+            if fun_nodes[host][i] not in fun_neighbors[var] :
+                fun_neighbors[var].append(fun_nodes[host][i])
+    var_nodes = [{var : var_node_cls(var = var, domain = pro.vars[var], fnbs = fun_neighbors[var]) for var in avars[i]} for i in range(len(avars))]
+    fun_host = functools.partial(dict_get_wrapper, d = fun_mapping, default_value = None)
+    return var_nodes, fun_nodes, fun_host
+
 def check_dict_compatible(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
     result = True
     for key, value in d2.items() :

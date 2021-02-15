@@ -685,19 +685,20 @@ class MaxSumAgent(Agent) :
 
     class Variable2FunctionMessage(CommMessage) :
         def __init__(self, src, dest, content) :
-            super(Variable2FunctionMessage, self).__init__(src = src, dest = dest, content = content)
+            super(MaxSumAgent.Variable2FunctionMessage, self).__init__(src = src, dest = dest, content = content)
 
     class Function2VariableMessage(CommMessage) :
         def __init__(self, src, dest, content) :
-            super(Function2VariableMessage, self).__init__(src = src, dest = dest, content = content)
+            super(MaxSumAgent.Function2VariableMessage, self).__init__(src = src, dest = dest, content = content)
 
-    def __init__(self, id, neighbors, var_nodes, fun_nodes, limit, log_dir = "") :
-        super(MaxSumAgent, self).__init__(id = int(id), pro = None, log_dir = log_dir)
-        self.neighbors = neighbors
+    def __init__(self, id, pro, var_nodes, fun_nodes, limit, var_host, fun_host, log_dir = "") :
+        super(MaxSumAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.var_nodes = var_nodes
         self.fun_nodes = fun_nodes
-        self.iter_done = {fnb.name : False for fnb in self.fun_nodes}
+        self.iter_done = {fname : False for fname in self.fun_nodes.keys()}
         self.limit = limit
+        self.var_host = var_host
+        self.fun_host = fun_host
         self.round = -1
 
     def process(self, msgs) :
@@ -707,27 +708,50 @@ class MaxSumAgent(Agent) :
                 self.log_msg("receive", msg)
                 if isinstance(msg, CommMessage) :
                     for ms_msg in msg.content :
-                        if isinstance(ms_msg, MaxSumAgent.Value2FuctionMessage) :
-                            pass
-                        elif isinstance(ms_msg, MaxSumAgent.Function2ValueMessage) :
-                            pass
-            content = []
+                        if isinstance(ms_msg, MaxSumAgent.Variable2FunctionMessage) :
+                            self.fun_nodes[ms_msg.dest].vnb_msgs[ms_msg.src] = ms_msg.content
+                        elif isinstance(ms_msg, MaxSumAgent.Function2VariableMessage) :
+                            self.var_nodes[ms_msg.dest].fnb_msgs[ms_msg.src] = ms_msg.content
+
             v2f_msgs = []
-            for var_node in self.var_nodes :
+            for var_node in self.var_nodes.values() :
                 if None not in var_node.fnb_msgs.values() :
-                    self.assign = {var_node.var : var_node.solve() for var_node in self.var_nodes}
+                    self.assign = {var_node.var : var_node.solve() for var_node in self.var_nodes.values()}
                     v2f_msgs += var_node.update()
                     var_node.fnb_msgs = {fnb.name : None for fnb in var_node.fnbs}
             f2v_msgs = []
-            for fun_node in self.fun_nodes :
+            for fun_node in self.fun_nodes.values() :
                 if None not in fun_node.vnb_msgs.values() :
                     f2v_msgs += fun_node.update()
                     fun_node.vnb_msgs = {var : None for var in self.con.vars}
+                    self.log("touch/%s/%d/%d" % (self.id, self.round, len(v2f_msgs)))
                     self.iter_done[fun_node.name] = True
-            if False not in self.iter_done.values() :
-                self.round += 1
-                self.iter_done = {fnb.name : False for fnb in self.fun_nodes}
 
+            contents = {}
+            for ms_msg in v2f_msgs :
+                if ms_msg.dest in self.fun_nodes.keys() :
+                    self.fun_nodes[ms_msg.dest].vnb_msgs[ms_msg.src] = ms_msg.content
+                else :
+                    id = var_host(ms_msg.dest)
+                    if id not in contents.keys() :
+                        contents[id] = [ms_msg]
+                    else :
+                        contents[id].append(ms_msg)
+            for ms_msg in f2v_msgs :
+                if ms_msg.dest in self.var_nodes.keys() :
+                    self.var_nodes[ms_msg.dest].fnb_msgs[ms_msg.src] = ms_msg.content
+                else :
+                    id = fun_host(ms_msg.dest)
+                    if id not in contents.keys() :
+                        contents[id] = [ms_msg]
+                    else :
+                        contents[id].append(ms_msg)
+            for id, content in contents.items() :
+                result["msgs"].append(CommMessage(src = self.id, dest = id, content = content))
+
+            if len(self.iter_done) > 0 and False not in self.iter_done.values() :
+                self.round += 1
+                self.iter_done = {fname : False for fname in self.fun_nodes.keys()}
             if self.round == self.limit :
                 result["msgs"].append(SysMessage(src = self.id, content = self.assign))
             for msg in result["msgs"] :

@@ -658,33 +658,78 @@ class DpopAgent(Agent) :
         return  ValueMessage(src = self.id, dest = child, content = cpa)
 
 class MaxSumAgent(Agent) :
-    # In this implementation, the agent is responsible for hosting both of the variable nodes and the function nodes.
-    # The messages between the variable nodes and the function nodes are now divided into
-    # 1. the inner-agent "messages", which are defined to follow the idea of message propagation approach of MaxSum, and
-    # 2. the inter-agent "messages", which packing the varaible to function messages and the function to variable messages
-    #   that are required to send to the other agents.
-    def __init__(self, id, pro, round_limit, neighbors, var_host, log_dir = "") :
-        super(MaxSumAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
-        self.round_limit = round_limit
+    class VariableNode(object) :
+        def __init__(self, var, domain, fnbs) :
+            self.var = var
+            self.domain = domain
+            self.fnbs = fnbs
+            self.fnb_msgs = {fnb.name : None for fnb in self.fnbs}
+
+        def update(self) :
+            msgs = []
+            return msgs
+
+        def solve(self) :
+            assign = {self.var : None}
+            return assign
+
+    class FunctionNode(object) :
+        def __init__(self, name, con) :
+            self.name = name
+            self.con = con
+            self.vnb_msgs = {var : None for var in self.con.vars}
+
+        def update(self) :
+            msgs = []
+            return msgs
+
+    class Variable2FunctionMessage(CommMessage) :
+        def __init__(self, src, dest, content) :
+            super(Variable2FunctionMessage, self).__init__(src = src, dest = dest, content = content)
+
+    class Function2VariableMessage(CommMessage) :
+        def __init__(self, src, dest, content) :
+            super(Function2VariableMessage, self).__init__(src = src, dest = dest, content = content)
+
+    def __init__(self, id, neighbors, var_nodes, fun_nodes, limit, log_dir = "") :
+        super(MaxSumAgent, self).__init__(id = int(id), pro = None, log_dir = log_dir)
         self.neighbors = neighbors
-        self.var_host = var_host
-        self.sorted_vars = sorted(list(self.pro.vars.keys()))
-        self.v2f = {}
-        self.f2v = {}
-        self.round = 0
+        self.var_nodes = var_nodes
+        self.fun_nodes = fun_nodes
+        self.iter_done = {fnb.name : False for fnb in self.fun_nodes}
+        self.limit = limit
+        self.round = -1
 
     def process(self, msgs) :
         result = {"msgs" : []}
-        if len(self.sorted_vars) > 0 :
-            if self.round < 1 :
-                pass
-            elif len(msgs) > 0 :
-                for msg in msgs :
-                    self.log_msg("receive", msg)
-                    if isinstance(msg, Value2FuctionMessage) :
-                        pass
-                    elif isinstance(msg, Function2ValueMessage) :
-                        pass
+        if self.round < self.limit and (len(self.var_nodes) > 0 or len(self.fun_nodes) > 0) :
+            for msg in msgs :
+                self.log_msg("receive", msg)
+                if isinstance(msg, CommMessage) :
+                    for ms_msg in msg.content :
+                        if isinstance(ms_msg, MaxSumAgent.Value2FuctionMessage) :
+                            pass
+                        elif isinstance(ms_msg, MaxSumAgent.Function2ValueMessage) :
+                            pass
+            content = []
+            v2f_msgs = []
+            for var_node in self.var_nodes :
+                if None not in var_node.fnb_msgs.values() :
+                    self.assign = {var_node.var : var_node.solve() for var_node in self.var_nodes}
+                    v2f_msgs += var_node.update()
+                    var_node.fnb_msgs = {fnb.name : None for fnb in var_node.fnbs}
+            f2v_msgs = []
+            for fun_node in self.fun_nodes :
+                if None not in fun_node.vnb_msgs.values() :
+                    f2v_msgs += fun_node.update()
+                    fun_node.vnb_msgs = {var : None for var in self.con.vars}
+                    self.iter_done[fun_node.name] = True
+            if False not in self.iter_done.values() :
+                self.round += 1
+                self.iter_done = {fnb.name : False for fnb in self.fun_nodes}
+
+            if self.round == self.limit :
+                result["msgs"].append(SysMessage(src = self.id, content = self.assign))
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result

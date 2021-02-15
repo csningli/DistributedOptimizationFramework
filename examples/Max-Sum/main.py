@@ -46,14 +46,20 @@ if __name__ == "__main__" :
 
     cons_graph = get_constraint_graph(pro = pro, avars = avars)
 
-    def con_host(con, var_host) :
-        ids = set([var_host(var) for var in con.vars])
-        return [max(ids)]
+    fun_neighbors = {var : []] for var in pro.vars.keys()}
+    fun_nodes = [[] for i in range(m)]
+    for i, con in enumerate(pro.cons) :
+        fun_node = MaxSumAgent.FunctionNode(name = i, con = con)
+        for var in con.vars :
+            if i not in fun_neighbors[var] :
+                fun_neighbors[var].append(i)
+    var_nodes = [[MaxSumAgent(var = var, domain = pro.vars[var], fnbs = fun_neighbors[var]) for var in avars[i]] for i in range(m)]
 
-    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     agents = []
     for i in range(m) :
-        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], round_limit = 10, neighbors = cons_graph[i], var_host = var_host, log_dir = log_dir))
+        agents.append(MaxSumAgent(id = i, neighbors = cons_graph[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10, log_dir = log_dir))
+        for var_node in agents[-1].var_nodes :
+            var_node.fnb_msgs = [Function2ValueMessage(src = fnb.name, dest = var_node.var, content = 1) for fnb in var_node.fnbs]
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())

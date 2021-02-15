@@ -67,14 +67,6 @@ class DoneMessage(CommMessage) :
     def __init__(self, src, dest, content) :
         super(DoneMessage, self).__init__(src = src, dest = dest, content = content)
 
-class Value2FunctionMessage(CommMessage) :
-    def __init__(self, src, dest, content) :
-        super(Value2FunctionMessage, self).__init__(src = src, dest = dest, content = content)
-
-class Function2ValueMessage(CommMessage) :
-    def __init__(self, src, dest, content) :
-        super(Function2ValueMessage, self).__init__(src = src, dest = dest, content = content)
-
 class SysMessage(Message) :
     def __init__(self, src, content) :
         super(SysMessage, self).__init__(src = src, dest = None, content = content)

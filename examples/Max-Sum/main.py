@@ -44,10 +44,10 @@ if __name__ == "__main__" :
 
     var_host = get_var_host(avars = avars)
     var_nodes, fun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode, all_vars = pro.vars)
-    for i, agent_var_nodes in var_nodes.items() :
+    for agent_var_nodes in var_nodes :
         for var_node in agent_var_nodes.values() :
             var_node.fnb_msgs = {fnb.name : [1] * len(var_node.domain.values) for fnb in var_node.fnbs}
-    var_nodes.values()[0][0].source = var_nodes.values()[0][0]
+    list(var_nodes[0].values())[0].source = ""
 
     sub_pros = pro.split(avars = avars)
     agents = []
@@ -63,7 +63,7 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    time_cost = monitor.run(agents = agents, timeout = 1)
+    time_cost = monitor.run(agents = agents, timeout = 0.2)
     print("Time cost: %s" % time_cost)
     print("-" * 50)
     print("Monitor.mem: %s" % monitor.mem)

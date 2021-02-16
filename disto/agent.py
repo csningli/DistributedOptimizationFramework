@@ -665,6 +665,7 @@ class MaxSumAgent(Agent) :
             self.value = None
             self.fnbs = fnbs
             self.fnb_msgs = {fnb.name : None for fnb in self.fnbs}
+            self.last_fnb_msgs = {fnb.name : self.fnb_msgs[fnb.name] for fnb in self.fnbs}
             self.source = None
             self.solved = False
 
@@ -677,13 +678,29 @@ class MaxSumAgent(Agent) :
             return msgs
 
         def solve(self) :
-            value = self.domain.first_value()
-            if len(self.fnbs) > 0 and None not in self.fnb_msgs.values() :
-                Z = [sum([self.fnb_msgs[fname][i] for fname in self.fnb_msgs.keys()]) for i in range(len(self.domain.values))]
-                if len(Z) > 0 :
-                    value = self.domain.values[Z.index(min(Z))]
-            self.solved = True
-            return value
+            msgs = []
+            self.value = self.domain.first_value()
+            if len(self.fnbs) > 0 :
+                index = None
+                msgs_container = self.fnb_msgs
+                if self.source == "" and None not in self.last_fnb_msgs.values() :
+                    Z = [sum([self.last_fnb_msgs[fname][i] for fname in self.last_fnb_msgs.keys()]) for i in range(len(self.domain.values))]
+                    if len(Z) > 0 :
+                        index = Z.index(min(Z))
+                    msgs_container = self.last_fnb_msgs
+                elif self.source is not None and self.fnb_msgs[self.source] is not None :
+                    index = [bool(v > -math.inf) for v in self.fnb_msgs[self.source]].index(True)
+                if index is not None :
+                    self.value = self.domain.values[index]
+                    fnbs = [fnb for fnb in self.fnbs if fnb.name != self.source]
+                    if len(fnbs) > 0 :
+                        for fnb in fnbs :
+                            Q = [sum([msgs_container[fname][i] for fname in msgs_container.keys() if fname != fnb.name]) if i == index else -math.inf for i in range(len(self.domain.values))]
+                            msgs.append(("v2f", self.var, fnb.name, Q))
+                    else :
+                        msgs.append(("v2f", self.var, None, None))
+                    self.solved = True
+            return msgs
 
     class FunctionNode(object) :
         def __init__(self, name, con, all_vars) :
@@ -741,6 +758,7 @@ class MaxSumAgent(Agent) :
                 for var_node in self.var_nodes.values() :
                     if None not in var_node.fnb_msgs.values() :
                         v2f_msgs += var_node.update()
+                        var_node.last_fnb_msgs = {fnb.name : var_node.fnb_msgs[fnb.name] for fnb in var_node.fnbs}
                         var_node.fnb_msgs = {fnb.name : None for fnb in var_node.fnbs}
                         self.iter_done[var_node.var] = True
                 f2v_msgs = []
@@ -779,30 +797,34 @@ class MaxSumAgent(Agent) :
                 for msg in msgs :
                     if isinstance(msg, ValueMessage) :
                         for ms_msg in msg.content :
-                            if ms_msg[0] == "v2f" :
+                            if ms_msg[0] == "v2f" and self.fun_nodes[ms_msg[2]].source is None :
+                                self.fun_nodes[ms_msg[2]].source = ms_msg[1]
                                 self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
-                            elif ms_msg[0] == "f2v" :
+                            elif ms_msg[0] == "f2v" and self.var_nodes[ms_msg[2]].source is None :
+                                self.var_nodes[ms_msg[2]].source = ms_msg[1]
                                 self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
 
                 v2f_msgs = []
-                for var_node in self.var_nodes :
+                for var_node in self.var_nodes.values() :
                     if var_node.source is not None and var_node.solved == False :
                         v2f_msgs += var_node.solve()
                         self.assign[var_node.var] = var_node.value
                         self.all_solved[var_node.var] = True
                 f2v_msgs = []
-                for fun_node in self.fun_nodes :
+                for fun_node in self.fun_nodes.values() :
                     if fun_node.source is not None and fun_node.solved == False :
-                        f2v_msgs += fun_node.solve()
+                        f2v_msgs += fun_node.update()
 
                 if False not in self.all_solved.values() :
                     result["msgs"].append(SysMessage(src = self.id, content = self.assign))
+                    self.all_solved = {var : False for var in self.var_nodes.keys()}
 
                 contents = {}
                 for ms_msg in v2f_msgs :
                     if ms_msg[2] is None :
                         result["msgs"].append(SysMessage(src = self.id, content = None))
-                    elif ms_msg[2] in self.fun_nodes.keys() :
+                    elif ms_msg[2] in self.fun_nodes.keys() and self.fun_nodes[ms_msg[2]].source is None :
+                        self.fun_nodes[ms_msg[2]].source = ms_msg[1]
                         self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
                     else :
                         id = self.fun_host(ms_msg[2])
@@ -811,7 +833,8 @@ class MaxSumAgent(Agent) :
                         else :
                             contents[id].append(ms_msg)
                 for ms_msg in f2v_msgs :
-                    if ms_msg[2] in self.var_nodes.keys() :
+                    if ms_msg[2] in self.var_nodes.keys() and self.var_nodes[ms_msg[2]].source is None :
+                        self.var_nodes[ms_msg[2]].source = ms_msg[1]
                         self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
                     else :
                         id = self.var_host(ms_msg[2])

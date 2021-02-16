@@ -5,7 +5,7 @@ import networkx as nx
 from disto.problem import total_cost, GraphColoringProblem
 from disto.agent import MaxSumAgent
 from disto.monitor import Monitor
-from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph, get_factor_nodes
+from disto.utils import get_var_host, print_problem, get_datetime_stamp, view_logs, get_constraint_graph, get_pseudo_tree, get_factor_nodes
 
 # In this example, Max-Sum # (A. Farinelli, A. Rogers, A. Petcu†, and N. R. Jennings,
 # "Decentralised Coordination of Low-Power Embedded Devices Using the Max-Sum Algorithm")
@@ -17,7 +17,7 @@ if __name__ == "__main__" :
     if not os.path.isdir(log_dir) :
         os.mkdir(log_dir)
 
-    n = 6 # number of variables
+    n = 3 # number of variables
 
     # graph = nx.generators.random_graphs.fast_gnp_random_graph(n = n, p = 0.6)
 
@@ -25,7 +25,7 @@ if __name__ == "__main__" :
     for i in range(n) :
         graph.add_node(str(i))
 
-    d = 2
+    d = 1
     for i in range(n) :
         for j in range(1, d + 1) :
             graph.add_edge(str(i), str((i + j) % n))
@@ -44,13 +44,17 @@ if __name__ == "__main__" :
 
     var_host = get_var_host(avars = avars)
     var_nodes, fun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode, all_vars = pro.vars)
+    for i, agent_var_nodes in var_nodes.items() :
+        for var_node in agent_var_nodes.values() :
+            var_node.fnb_msgs = {fnb.name : [1] * len(var_node.domain.values) for fnb in var_node.fnbs}
+    var_nodes.values()[0][0].source = var_nodes.values()[0][0]
 
     sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :
-        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 50, var_host = var_host, fun_host = fun_host, log_dir = log_dir))
-        for var_node in agents[-1].var_nodes.values() :
-            var_node.fnb_msgs = {fnb.name : [1] * len(var_node.domain.values) for fnb in var_node.fnbs}
+        agents.append(MaxSumAgent(id = i, pro = sub_pros[i],
+            var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10,
+            var_host = var_host, fun_host = fun_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -72,5 +76,5 @@ if __name__ == "__main__" :
         cost, _ = total_cost(cons = pro.cons, assign = final)
         print("Cost: %s" % cost)
         print("-" * 50)
-    # view_logs(log_dir = log_dir, style = "timeline")
+    view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)

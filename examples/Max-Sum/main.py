@@ -48,9 +48,9 @@ if __name__ == "__main__" :
     sub_pros = pro.split(avars = avars)
     agents = []
     for i in range(m) :
-        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10, var_host = var_host, fun_host = fun_host, log_dir = log_dir))
+        agents.append(MaxSumAgent(id = i, pro = sub_pros[i], var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 50, var_host = var_host, fun_host = fun_host, log_dir = log_dir))
         for var_node in agents[-1].var_nodes.values() :
-            var_node.fnb_msgs = {fnb.name : ("f2v", fnb.name, var_node.var, [1] * len(var_node.domain.values)) for fnb in var_node.fnbs}
+            var_node.fnb_msgs = {fnb.name : [1] * len(var_node.domain.values) for fnb in var_node.fnbs}
 
     for i, agent in enumerate(agents) :
         print("Agent: %s" % agent.info())
@@ -72,5 +72,5 @@ if __name__ == "__main__" :
         cost, _ = total_cost(cons = pro.cons, assign = final)
         print("Cost: %s" % cost)
         print("-" * 50)
-    view_logs(log_dir = log_dir, style = "timeline")
+    # view_logs(log_dir = log_dir, style = "timeline")
     print("-" * 50)

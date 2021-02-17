@@ -101,33 +101,31 @@ def get_factor_nodes(pro, avars, con_host, var_node_cls, fun_node_cls) :
     fun_node_children = {i : [] for i in range(len(pro.cons))}
     var_node_visited = {var : False for var in pro.vars.keys()}
     fun_node_visited = {i : False for i in range(len(pro.cons))}
-    var_node_queue = []
-    fun_node_queue = []
+    queue = []
     while False in var_node_visited.values() :
-        var_node_queue.append((None, list(var_node_visited.keys())[list(var_node_visited.values()).index(False)]))
-        while len(var_node_queue) > 0 :
-            while len(var_node_queue) > 0 :
-                fname, var = var_node_queue.pop()
-                if var_node_visited[var] == False :
-                    if fname is not None :
-                        var_node_parent[var] = fname
-                        if var not in fun_node_children[fname] :
-                            fun_node_children[fname].append(var)
-                    for fnb in var_node_neighbors[var] :
+        queue.append(("var", None, list(var_node_visited.keys())[list(var_node_visited.values()).index(False)]))
+        while len(queue) > 0 :
+            cat, parent, node = queue.pop()
+            if cat == "var" :
+                if var_node_visited[node] == False :
+                    if parent is not None :
+                        var_node_parent[node] = parent
+                        if node not in fun_node_children[parent] :
+                            fun_node_children[parent].append(node)
+                    for fnb in var_node_neighbors[node] :
                         if fun_node_visited[fnb] == False :
-                            fun_node_queue.insert(0, (var, fnb))
-                    var_node_visited[var] = True
-            while len(fun_node_queue) > 0 :
-                var, fname = fun_node_queue.pop()
-                if fun_node_visited[fname] == False :
-                    if var is not None :
-                        fun_node_parent[fname] = var
-                        if fname not in var_node_children[var] :
-                            var_node_children[var].append(fname)
-                    for vnb in fun_node_neighbors[fname] :
+                            queue.append(("fun", node, fnb))
+                    var_node_visited[node] = True
+            elif cat == "fun" :
+                if fun_node_visited[node] == False :
+                    if parent is not None :
+                        fun_node_parent[node] = parent
+                        if node not in var_node_children[parent] :
+                            var_node_children[parent].append(node)
+                    for vnb in fun_node_neighbors[node] :
                         if var_node_visited[vnb] == False :
-                            var_node_queue.insert(0, (fname, vnb))
-                    fun_node_visited[fname] = True
+                            queue.append(("var", node, vnb))
+                    fun_node_visited[node] = True
 
     fun_nodes = {i : None for i in range(len(pro.cons))}
     for i, con in enumerate(pro.cons) :

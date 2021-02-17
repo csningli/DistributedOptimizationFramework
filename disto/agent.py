@@ -687,7 +687,7 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
             msgs = []
             if value is not None :
                 self.value = value
-            for fname in [fname for fname in self.children if fname != self.parent] :
+            for fname in [fnb.name for fnb in self.fnbs if fnb.name != self.parent] :
                 msgs.append(("v2f_value", self.var, fname, self.value))
             return msgs
 
@@ -699,7 +699,7 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
             self.parent = parent
             self.children = children
             self.vnb_msgs = {var : [1] * len(all_vars[var].values) for var in self.con.vars}
-            self.assign = {var : {value : {other : None for other in self.con.vars if other != var} for value in self.all_vars[var].values} for var in self.con.vars}
+            self.view = {}
             self.round = 0
 
         def update(self, source) :
@@ -717,18 +717,25 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
                             for j in range(len(self.con.vars)) :
                                 if j != i :
                                     cost += self.vnb_msgs[self.con.vars[j]][d[j]]
-                            if cost > max_cost :
-                                max_cost = cost
-                                self.assign[var][v] = {other : assign[other] for other in self.con.vars if other != var}
+                            max_cost = max(max_cost, cost)
                         R.append(max_cost)
                     msgs.append(("f2v", self.name, var, R))
             self.round += 1
             return msgs
 
-        def solve(self, value) :
+        def solve(self) :
             msgs = []
+            vnbs = [var for var in self.con.vars if var not in self.view.keys()]
+            max_cost, max_assign = - math.inf, None
+            for d in itertools.product(*[self.all_vars[var].values for var in vnbs]) :
+                assign = {**{vnbs[i] : d[i] for i in range(len(vnbs))}, **self.view}
+                x = fit_assign_to_con(assign, self.con)
+                cost = math.exp(-self.con.cost(x)) if x is not None else 1
+                if cost > max_cost or max_assign is None :
+                    max_cost = cost
+                    max_assign = assign
             for var in [var for var in self.children if var != self.parent] :
-                msgs.append(("f2v_value", self.name, var, self.assign[self.parent][value][var]))
+                msgs.append(("f2v_value", self.name, var, max_assign[var]))
             return msgs
 
     def __init__(self, id, pro, var_nodes, fun_nodes, limit, var_host, fun_host, log_dir = "") :
@@ -758,17 +765,20 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
                 elif isinstance(msg, ValueMessage) :
                     for ms_msg in msg.content :
                         if ms_msg[0] == "v2f_value" and ms_msg[2] in self.fun_nodes.keys() and self.fun_nodes[ms_msg[2]].round >= self.limit :
-                            f2v_value_msgs += self.fun_nodes[ms_msg[2]].solve(value = ms_msg[3])
+                            self.fun_nodes[ms_msg[2]].view[ms_msg[1]] = ms_msg[3]
+                            if ms_msg[1] == self.fun_nodes[ms_msg[2]].parent :
+                                f2v_value_msgs += self.fun_nodes[ms_msg[2]].solve()
                         elif ms_msg[0] == "f2v_value" and ms_msg[2] in self.var_nodes.keys() and self.var_nodes[ms_msg[2]].round >= self.limit :
-                            v2f_value_msgs += self.var_nodes[ms_msg[2]].solve(value = ms_msg[3])
-                            self.assign[var] = var_node.value
-                            result["msgs"].append(SysMessage(src = self.id, content = self.assign))
+                            if ms_msg[1] == self.var_nodes[ms_msg[2]].parent :
+                                v2f_value_msgs += self.var_nodes[ms_msg[2]].solve(value = ms_msg[3])
+                                self.assign[var] = var_node.value
+                                result["msgs"].append(SysMessage(src = self.id, content = self.assign))
 
             for var, var_node in self.var_nodes.items() :
                 if var_node.round < self.limit and self.var_started[var] == False :
                     v2f_value_msgs += var_node.update()
                     self.var_started[var] = True
-                elif var_node.round >= self.limit and self.var_solved[var] == False :
+                elif var_node.round >= self.limit and var_node.parent is None and self.var_solved[var] == False :
                     v2f_value_msgs += var_node.solve()
                     self.var_solved[var] = True
                     self.assign[var] = var_node.value

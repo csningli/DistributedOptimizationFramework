@@ -114,7 +114,7 @@ def get_factor_nodes(pro, avars, con_host, var_node_cls, fun_node_cls) :
                             fun_node_children[parent].append(node)
                     for fnb in var_node_neighbors[node] :
                         if fun_node_visited[fnb] == False :
-                            queue.append(("fun", node, fnb))
+                            queue.insert(0, ("fun", node, fnb))
                     var_node_visited[node] = True
             elif cat == "fun" :
                 if fun_node_visited[node] == False :

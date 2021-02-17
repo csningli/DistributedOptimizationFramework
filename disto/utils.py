@@ -142,6 +142,9 @@ def get_factor_nodes(pro, avars, con_host, var_node_cls, fun_node_cls) :
         fun_mapping[i] = host
     avar_nodes = [{var : var_nodes[var] for var in avars[i]} for i in range(len(avars))]
     fun_host = functools.partial(dict_get_wrapper, d = fun_mapping, default_value = None)
+
+    print(fun_node_parent)
+    print(var_node_parent)
     return avar_nodes, afun_nodes, fun_host
 
 def check_dict_compatible(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.

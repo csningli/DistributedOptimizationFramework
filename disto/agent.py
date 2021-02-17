@@ -662,11 +662,11 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
         def __init__(self, var, domain, fnbs, parent, children) :
             self.var = var
             self.domain = domain
-            self.value = None
             self.fnbs = fnbs
-            self.fnb_msgs = {fnb.name : [1] * len(self.domain.values) for fnb in self.fnbs}
             self.parent = parent
             self.children = children
+            self.fnb_msgs = {fnb.name : [1] * len(self.domain.values) for fnb in self.fnbs}
+            self.value = None
             self.round = 0
 
         def update(self, source = None) :
@@ -696,11 +696,10 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
             self.name = name
             self.con = con
             self.all_vars = all_vars
-            self.vnb_msgs = {var : [1] * len(all_vars[var].values) for var in self.con.vars}
-            self.assign = {var : {value : {other : None for other in self.con.vars if other != var} for value in self.all_vars[var].values} for var in self.con.vars}
-            self.parent_value = None
             self.parent = parent
             self.children = children
+            self.vnb_msgs = {var : [1] * len(all_vars[var].values) for var in self.con.vars}
+            self.assign = {var : {value : {other : None for other in self.con.vars if other != var} for value in self.all_vars[var].values} for var in self.con.vars}
             self.round = 0
 
         def update(self, source) :
@@ -769,7 +768,7 @@ class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED
                 if var_node.round < self.limit and self.var_started[var] == False :
                     v2f_value_msgs += var_node.update()
                     self.var_started[var] = True
-                if var_node.round >= self.limit and self.var_solved[var] == False :
+                elif var_node.round >= self.limit and self.var_solved[var] == False :
                     v2f_value_msgs += var_node.solve()
                     self.var_solved[var] = True
                     self.assign[var] = var_node.value

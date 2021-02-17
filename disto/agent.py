@@ -374,7 +374,7 @@ class AdoptAgent(Agent) :
                         self.children_done[msg.src] = True
                         if False not in self.children_done.values() :
                             if self.parent is None :
-                                result["msgs"].append(SysMessage(src = self.id, content = None))
+                                self.log("finished/%s" % self.id)
                             else :
                                 result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
                 for msg in msgs :
@@ -434,7 +434,7 @@ class AdoptAgent(Agent) :
                                 result["msgs"].append(TerminateMessage(src = self.id, dest = id, content = {**self.current_context, **self.assign}))
                         else :
                             if self.parent is None :
-                                result["msgs"].append(SysMessage(src = self.id, content = None))
+                                self.log("finished/%s" % self.id)
                             else :
                                 result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
                 if self.parent is not None :
@@ -596,7 +596,7 @@ class DpopAgent(Agent) :
                             if self.parent is not None :
                                 result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
                             else :
-                                result["msgs"].append(SysMessage(src = self.id, content = None))
+                                self.log("finished/%s" % self.id)
                 for msg in msgs :
                     if isinstance(msg, ValueMessage) :
                         self.view = {**self.view, **msg.content}
@@ -609,7 +609,7 @@ class DpopAgent(Agent) :
                             if self.parent is not None :
                                 result["msgs"].append(DoneMessage(src = self.id, dest = self.parent, content = None))
                             else :
-                                result["msgs"].append(SysMessage(src = self.id, content = None))
+                                self.log("finished/%s" % self.id)
             for msg in result["msgs"] :
                 self.log_msg("send", msg)
         return result
@@ -657,223 +657,140 @@ class DpopAgent(Agent) :
                 cpa[var] = value
         return  ValueMessage(src = self.id, dest = child, content = cpa)
 
-class MaxSumAgent(Agent) :
+class MaxSumAgent(Agent) : # In this implementation, the total cost is MINIMIZED.
     class VariableNode(object) :
-        def __init__(self, var, domain, fnbs) :
+        def __init__(self, var, domain, fnbs, parent, children) :
             self.var = var
             self.domain = domain
             self.value = None
             self.fnbs = fnbs
-            self.fnb_msgs = {fnb.name : None for fnb in self.fnbs}
-            self.last_fnb_msgs = {fnb.name : self.fnb_msgs[fnb.name] for fnb in self.fnbs}
-            self.source = None
-            self.solved = False
+            self.fnb_msgs = {fnb.name : [1] * len(self.domain.values) for fnb in self.fnbs}
+            self.parent = parent
+            self.children = children
+            self.round = 0
 
-        def update(self) :
+        def update(self, source = None) :
             msgs = []
+            if self.parent is None :
+                Z = [sum([self.fnb_msgs[fname][i] for fname in self.fnb_msgs.keys()]) for i in range(len(self.domain.values))]
+                if len(Z) > 0 :
+                    self.value = self.domain.values[Z.index(min(Z))]
             for fnb in self.fnbs :
-                Q = [sum([self.fnb_msgs[fname][i] for fname in self.fnb_msgs.keys() if fname != fnb.name]) for i in range(len(self.domain.values))]
-                Q = [v - sum(Q) / len(self.domain.values) for v in Q]
-                msgs.append(("v2f", self.var, fnb.name, Q))
+                if fnb.name != source :
+                    Q = [sum([self.fnb_msgs[fname][i] for fname in self.fnb_msgs.keys() if fname != fnb.name]) for i in range(len(self.domain.values))]
+                    Q = [v - sum(Q) / len(self.domain.values) for v in Q]
+                    msgs.append(("v2f", self.var, fnb.name, Q))
+            self.round += 1
             return msgs
 
-        def solve(self) :
+        def solve(self, value = None) :
             msgs = []
-            self.value = self.domain.first_value()
-            if len(self.fnbs) > 0 :
-                index = None
-                msgs_container = self.fnb_msgs
-                if self.source == "" and None not in self.last_fnb_msgs.values() :
-                    Z = [sum([self.last_fnb_msgs[fname][i] for fname in self.last_fnb_msgs.keys()]) for i in range(len(self.domain.values))]
-                    if len(Z) > 0 :
-                        index = Z.index(min(Z))
-                    msgs_container = self.last_fnb_msgs
-                elif self.source is not None and self.fnb_msgs[self.source] is not None :
-                    index = [bool(v > -math.inf) for v in self.fnb_msgs[self.source]].index(True)
-                if index is not None :
-                    self.value = self.domain.values[index]
-                    fnbs = [fnb for fnb in self.fnbs if fnb.name != self.source]
-                    if len(fnbs) > 0 :
-                        for fnb in fnbs :
-                            Q = [sum([msgs_container[fname][i] for fname in msgs_container.keys() if fname != fnb.name]) if i == index else -math.inf for i in range(len(self.domain.values))]
-                            msgs.append(("v2f", self.var, fnb.name, Q))
-                    else :
-                        msgs.append(("v2f", self.var, None, None))
-                    self.solved = True
+            if value is not None :
+                self.value = value
+            for fname in [fname for fname in self.children if fname != self.parent] :
+                msgs.append(("v2f_value", self.var, fname, self.value))
             return msgs
 
     class FunctionNode(object) :
-        def __init__(self, name, con, all_vars) :
+        def __init__(self, name, con, all_vars, parent, children) :
             self.name = name
             self.con = con
             self.all_vars = all_vars
-            self.vnb_msgs = {var : None for var in self.con.vars}
-            self.last_vnb_msgs = {var : self.vnb_msgs[var] for var in self.con.vars}
-            self.source = None
-            self.solved = False
+            self.vnb_msgs = {var : [1] * len(all_vars[var].values) for var in self.con.vars}
+            self.assign = {var : {value : {other : None for other in self.con.vars if other != var} for value in self.all_vars[var].values} for var in self.con.vars}
+            self.parent_value = None
+            self.parent = parent
+            self.children = children
+            self.round = 0
 
-        def update(self) :
+        def update(self, source) :
             msgs = []
             for i, var in enumerate(self.con.vars) :
-                R = []
-                for j, v in enumerate(self.all_vars[var].values) :
-                    max_cost = 0
-                    for d in itertools.product(*[list(range(len(self.all_vars[other].values))) for other in self.con.vars if other != var]) :
-                        d = d[0:i] + (j,) + d[i:]
-                        assign = {self.con.vars[i] : self.all_vars[self.con.vars[i]].values[d[i]] for i in range(len(self.con.vars))}
-                        x = fit_assign_to_con(assign, self.con)
-                        cost = math.exp(-self.con.cost(x)) if x is not None else 1
-                        for j in range(len(self.con.vars)) :
-                            if j != i :
-                                cost += self.vnb_msgs[self.con.vars[j]][d[j]]
-                        max_cost = max(max_cost, cost)
-                    R.append(max_cost)
-                msgs.append(("f2v", self.name, var, R))
+                if var != source :
+                    R = []
+                    for j, v in enumerate(self.all_vars[var].values) :
+                        max_cost = 0
+                        for d in itertools.product(*[list(range(len(self.all_vars[other].values))) for other in self.con.vars if other != var]) :
+                            d = d[0:i] + (j,) + d[i:]
+                            assign = {self.con.vars[i] : self.all_vars[self.con.vars[i]].values[d[i]] for i in range(len(self.con.vars))}
+                            x = fit_assign_to_con(assign, self.con)
+                            cost = math.exp(-self.con.cost(x)) if x is not None else 1
+                            for j in range(len(self.con.vars)) :
+                                if j != i :
+                                    cost += self.vnb_msgs[self.con.vars[j]][d[j]]
+                            if cost > max_cost :
+                                max_cost = cost
+                                self.assign[var][v] = {other : assign[other] for other in self.con.vars if other != var}
+                        R.append(max_cost)
+                    msgs.append(("f2v", self.name, var, R))
+            self.round += 1
             return msgs
 
-        def solve(self) :
+        def solve(self, value) :
             msgs = []
-            if self.source is not None :
-                vnbs = [var for var in self.con.vars if var != self.source]
-                if len(vnbs) > 0 :
-                    for i, var in enumerate(self.con.vars) :
-                        if var != self.source :
-                            R = []
-                            for j, v in enumerate(self.all_vars[var].values) :
-                                max_cost = 0
-                                for d in itertools.product(*[list(range(len(self.all_vars[other].values))) for other in self.con.vars if other != var]) :
-                                    d = d[0:i] + (j,) + d[i:]
-                                    assign = {self.con.vars[i] : self.all_vars[self.con.vars[i]].values[d[i]] for i in range(len(self.con.vars))}
-                                    x = fit_assign_to_con(assign, self.con)
-                                    cost = math.exp(-self.con.cost(x)) if x is not None else 1
-                                    for j in range(len(self.con.vars)) :
-                                        if j != i :
-                                            cost += self.last_vnb_msgs[self.con.vars[j]][d[j]]
-                                    max_cost = max(max_cost, cost)
-                                R.append(max_cost)
-                            msgs.append(("f2v", self.name, var, R))
-                else :
-                    msgs.append(("f2v", self.name, None, None))
-                self.solved = True
+            for var in [var for var in self.children if var != self.parent] :
+                msgs.append(("f2v_value", self.name, var, self.assign[self.parent][value][var]))
             return msgs
 
     def __init__(self, id, pro, var_nodes, fun_nodes, limit, var_host, fun_host, log_dir = "") :
         super(MaxSumAgent, self).__init__(id = int(id), pro = pro, log_dir = log_dir)
         self.var_nodes = var_nodes
         self.fun_nodes = fun_nodes
-        self.iter_done = {var : False for var in self.var_nodes.keys()}
         self.limit = limit
         self.var_host = var_host
         self.fun_host = fun_host
-        self.all_solved = {var : False for var in self.var_nodes.keys()}
-        self.round = -1
+        self.var_started = {var : False for var in self.var_nodes.keys()}
+        self.var_solved = {var : False for var in self.var_nodes.keys()}
 
     def process(self, msgs) :
         result = {"msgs" : []}
         if len(self.var_nodes) > 0  :
-            if self.round < self.limit :
-                for msg in msgs :
-                    self.log_msg("receive", msg)
-                    if isinstance(msg, CommMessage) :
-                        for ms_msg in msg.content :
-                            if ms_msg[0] == "v2f" :
-                                self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
-                            elif ms_msg[0] == "f2v" :
-                                self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
+            v2f_comm_msgs, f2v_comm_msgs, v2f_value_msgs, f2v_value_msgs = [], [], [], []
+            for msg in msgs :
+                self.log_msg("receive", msg)
+                if isinstance(msg, CommMessage) :
+                    for ms_msg in msg.content :
+                        if ms_msg[0] == "v2f" and ms_msg[2] in self.fun_nodes.keys() and self.fun_nodes[ms_msg[2]].round < self.limit :
+                            self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
+                            f2v_comm_msgs += self.fun_nodes[ms_msg[2]].update(source = ms_msg[1])
+                        elif ms_msg[0] == "f2v" and ms_msg[2] in self.var_nodes.keys() and self.var_nodes[ms_msg[2]].round < self.limit :
+                            self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
+                            v2f_comm_msgs += self.var_nodes[ms_msg[2]].update(source = ms_msg[1])
+                elif isinstance(msg, ValueMessage) :
+                    for ms_msg in msg.content :
+                        if ms_msg[0] == "v2f_value" and ms_msg[2] in self.fun_nodes.keys() and self.fun_nodes[ms_msg[2]].round >= self.limit :
+                            f2v_value_msgs += self.fun_nodes[ms_msg[2]].solve(value = ms_msg[3])
+                        elif ms_msg[0] == "f2v_value" and ms_msg[2] in self.var_nodes.keys() and self.var_nodes[ms_msg[2]].round >= self.limit :
+                            v2f_value_msgs += self.var_nodes[ms_msg[2]].solve(value = ms_msg[3])
+                            self.assign[var] = var_node.value
+                            result["msgs"].append(SysMessage(src = self.id, content = self.assign))
 
-                v2f_msgs = []
-                for var_node in self.var_nodes.values() :
-                    if None not in var_node.fnb_msgs.values() :
-                        v2f_msgs += var_node.update()
-                        var_node.last_fnb_msgs = {fnb.name : var_node.fnb_msgs[fnb.name] for fnb in var_node.fnbs}
-                        var_node.fnb_msgs = {fnb.name : None for fnb in var_node.fnbs}
-                        self.iter_done[var_node.var] = True
-                f2v_msgs = []
-                for fun_node in self.fun_nodes.values() :
-                    if None not in fun_node.vnb_msgs.values() :
-                        f2v_msgs += fun_node.update()
-                        fun_node.last_vnb_msgs = {var : fun_node.vnb_msgs[var] for var in fun_node.con.vars}
-                        fun_node.vnb_msgs = {var : None for var in fun_node.con.vars}
-
-                contents = {}
-                for ms_msg in v2f_msgs :
-                    if ms_msg[2] in self.fun_nodes.keys() :
-                        self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
-                    else :
-                        id = self.fun_host(ms_msg[2])
-                        if id not in contents.keys() :
-                            contents[id] = [ms_msg]
-                        else :
-                            contents[id].append(ms_msg)
-                for ms_msg in f2v_msgs :
-                    if ms_msg[2] in self.var_nodes.keys() :
-                        self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
-                    else :
-                        id = self.var_host(ms_msg[2])
-                        if id not in contents.keys() :
-                            contents[id] = [ms_msg]
-                        else :
-                            contents[id].append(ms_msg)
-                for id, content in contents.items() :
-                    result["msgs"].append(CommMessage(src = self.id, dest = id, content = content))
-
-                if len(self.iter_done) > 0 and False not in self.iter_done.values() :
-                    self.round += 1
-                    self.iter_done = {var : False for var in self.var_nodes.keys()}
-
-            if self.round == self.limit :
-                for msg in msgs :
-                    if isinstance(msg, ValueMessage) :
-                        for ms_msg in msg.content :
-                            if ms_msg[0] == "v2f" and self.fun_nodes[ms_msg[2]].source is None :
-                                self.fun_nodes[ms_msg[2]].source = ms_msg[1]
-                                self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
-                            elif ms_msg[0] == "f2v" and self.var_nodes[ms_msg[2]].source is None :
-                                self.var_nodes[ms_msg[2]].source = ms_msg[1]
-                                self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
-
-                v2f_msgs = []
-                for var_node in self.var_nodes.values() :
-                    if var_node.source is not None and var_node.solved == False :
-                        v2f_msgs += var_node.solve()
-                        self.assign[var_node.var] = var_node.value
-                        self.all_solved[var_node.var] = True
-                f2v_msgs = []
-                for fun_node in self.fun_nodes.values() :
-                    if fun_node.source is not None and fun_node.solved == False :
-                        f2v_msgs += fun_node.solve()
-
-                if False not in self.all_solved.values() :
+            for var, var_node in self.var_nodes.items() :
+                if var_node.round < self.limit and self.var_started[var] == False :
+                    v2f_value_msgs += var_node.update()
+                    self.var_started[var] = True
+                if var_node.round >= self.limit and self.var_solved[var] == False :
+                    v2f_value_msgs += var_node.solve()
+                    self.var_solved[var] = True
+                    self.assign[var] = var_node.value
                     result["msgs"].append(SysMessage(src = self.id, content = self.assign))
-                    self.all_solved = {var : False for var in self.var_nodes.keys()}
 
+            for v2f_msgs, f2v_msgs, msg_cls in [(v2f_comm_msgs, f2v_comm_msgs, CommMessage), (v2f_value_msgs, f2v_value_msgs, ValueMessage)] :
                 contents = {}
                 for ms_msg in v2f_msgs :
-                    if ms_msg[2] is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = None))
-                    elif ms_msg[2] in self.fun_nodes.keys() and self.fun_nodes[ms_msg[2]].source is None :
-                        self.fun_nodes[ms_msg[2]].source = ms_msg[1]
-                        self.fun_nodes[ms_msg[2]].vnb_msgs[ms_msg[1]] = ms_msg[3]
+                    id = self.fun_host(ms_msg[2])
+                    if id not in contents.keys() :
+                        contents[id] = [ms_msg]
                     else :
-                        id = self.fun_host(ms_msg[2])
-                        if id not in contents.keys() :
-                            contents[id] = [ms_msg]
-                        else :
-                            contents[id].append(ms_msg)
+                        contents[id].append(ms_msg)
                 for ms_msg in f2v_msgs :
-                    if ms_msg[2] is None :
-                        result["msgs"].append(SysMessage(src = self.id, content = None))
-                    elif ms_msg[2] in self.var_nodes.keys() and self.var_nodes[ms_msg[2]].source is None :
-                        self.var_nodes[ms_msg[2]].source = ms_msg[1]
-                        self.var_nodes[ms_msg[2]].fnb_msgs[ms_msg[1]] = ms_msg[3]
+                    id = self.var_host(ms_msg[2])
+                    if id not in contents.keys() :
+                        contents[id] = [ms_msg]
                     else :
-                        id = self.var_host(ms_msg[2])
-                        if id not in contents.keys() :
-                            contents[id] = [ms_msg]
-                        else :
-                            contents[id].append(ms_msg)
+                        contents[id].append(ms_msg)
                 for id, content in contents.items() :
-                    result["msgs"].append(ValueMessage(src = self.id, dest = id, content = content))
+                    result["msgs"].append(msg_cls(src = self.id, dest = id, content = content))
 
             for msg in result["msgs"] :
                 self.log_msg("send", msg)

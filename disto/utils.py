@@ -86,21 +86,63 @@ def get_var_host(avars) :
            var_mapping[var] = i
     return functools.partial(dict_get_wrapper, d = var_mapping, default_value = None)
 
-def get_factor_nodes(pro, avars, var_node_cls, fun_node_cls, all_vars) :
-    var_host = get_var_host(avars = avars)
-    fun_neighbors = {var : [] for var in pro.vars.keys()}
-    fun_nodes = [{} for i in range(len(avars))]
-    fun_mapping = {}
+def get_factor_nodes(pro, avars, con_host, var_node_cls, fun_node_cls) :
+    var_node_neighbors = {var : [] for var in pro.vars.keys()}
+    fun_node_neighbors = {i : [] for i in range(len(pro.cons))}
     for i, con in enumerate(pro.cons) :
-        host = max(set([var_host(var) for var in con.vars]))
-        fun_nodes[host][i] = fun_node_cls(name = i, con = con, all_vars = all_vars)
-        fun_mapping[i] = host
         for var in con.vars :
-            if fun_nodes[host][i] not in fun_neighbors[var] :
-                fun_neighbors[var].append(fun_nodes[host][i])
-    var_nodes = [{var : var_node_cls(var = var, domain = pro.vars[var], fnbs = fun_neighbors[var]) for var in avars[i]} for i in range(len(avars))]
+            if var not in fun_node_neighbors[i] :
+                fun_node_neighbors[i].append(var)
+            if i not in var_node_neighbors[var] :
+                var_node_neighbors[var].append(i)
+    var_node_parent = {var : None for var in pro.vars.keys()}
+    fun_node_parent = {i : None for i in range(len(pro.cons))}
+    var_node_children = {var : [] for var in pro.vars.keys()}
+    fun_node_children = {i : [] for i in range(len(pro.cons))}
+    var_node_visited = {var : False for var in pro.vars.keys()}
+    fun_node_visited = {i : False for i in range(len(pro.cons))}
+    var_node_queue = []
+    fun_node_queue = []
+    while False in var_node_visited.values() :
+        var_node_queue.append((None, list(var_node_visited.keys())[list(var_node_visited.values()).index(False)]))
+        while len(var_node_queue) > 0 :
+            while len(var_node_queue) > 0 :
+                fname, var = var_node_queue.pop()
+                if var_node_visited[var] == False :
+                    if fname is not None :
+                        var_node_parent[var] = fname
+                        if var not in fun_node_children[fname] :
+                            fun_node_children[fname].append(var)
+                    for fnb in var_node_neighbors[var] :
+                        if fun_node_visited[fnb] == False :
+                            fun_node_queue.insert(0, (var, fnb))
+                    var_node_visited[var] = True
+            while len(fun_node_queue) > 0 :
+                var, fname = fun_node_queue.pop()
+                if fun_node_visited[fname] == False :
+                    if var is not None :
+                        fun_node_parent[fname] = var
+                        if fname not in var_node_children[var] :
+                            var_node_children[var].append(fname)
+                    for vnb in fun_node_neighbors[fname] :
+                        if var_node_visited[vnb] == False :
+                            var_node_queue.insert(0, (fname, vnb))
+                    fun_node_visited[fname] = True
+
+    fun_nodes = {i : None for i in range(len(pro.cons))}
+    for i, con in enumerate(pro.cons) :
+        fun_nodes[i] = fun_node_cls(name = i, con = con, all_vars = pro.vars, parent = fun_node_parent[i], children = fun_node_children[i])
+    var_nodes = {var : var_node_cls(var = var, domain = pro.vars[var], fnbs = [fun_nodes[i] for i in var_node_neighbors[var]], parent = var_node_parent[var], children = var_node_children[var]) for var in pro.vars.keys()}
+
+    fun_mapping = {}
+    afun_nodes = [{} for i in range(len(avars))]
+    for i, con in enumerate(pro.cons) :
+        host = con_host(con, get_var_host(avars = avars))[0]
+        afun_nodes[host][i] = fun_nodes[i]
+        fun_mapping[i] = host
+    avar_nodes = [{var : var_nodes[var] for var in avars[i]} for i in range(len(avars))]
     fun_host = functools.partial(dict_get_wrapper, d = fun_mapping, default_value = None)
-    return var_nodes, fun_nodes, fun_host
+    return avar_nodes, afun_nodes, fun_host
 
 def check_dict_compatible(d1, d2) : # return True iff d1 and d2 have the same values for the common keys.
     result = True
@@ -141,23 +183,25 @@ def get_pseudo_tree(graph) :
     # and the list of pseudo children, of node i.
     tree = [(None, [], [], []) for i in range(len(graph))]
     visited = [False for i in range(len(graph))]
-    queue = [(None, 0)]
-    while len(queue) > 0 :
-        parent, node = queue.pop()
-        if visited[node] == False :
-            if parent is not None :
-                tree[node] = (parent, [], [], [])
-                if node not in tree[parent][1] :
-                    tree[parent][1].append(node)
-            for nb in graph[node] :
-                if visited[nb] == False :
-                    queue.append((node, nb))
-                elif nb != parent :
-                    if nb not in tree[node][2] :
-                        tree[node][2].append(nb)
-                    if node not in tree[nb][3] :
-                        tree[nb][3].append(node)
-            visited[node] = True
+    queue = []
+    while False in visited :
+        queue.append((None, visited.index(False)))
+        while len(queue) > 0 :
+            parent, node = queue.pop()
+            if visited[node] == False :
+                if parent is not None :
+                    tree[node] = (parent, [], [], [])
+                    if node not in tree[parent][1] :
+                        tree[parent][1].append(node)
+                for nb in graph[node] :
+                    if visited[nb] == False :
+                        queue.append((node, nb))
+                    elif nb != parent :
+                        if nb not in tree[node][2] :
+                            tree[node][2].append(nb)
+                        if node not in tree[nb][3] :
+                            tree[nb][3].append(node)
+                visited[node] = True
     return tree
 
 def get_key_value_tuples_from_dict(d) :

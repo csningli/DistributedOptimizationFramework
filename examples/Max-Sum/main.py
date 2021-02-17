@@ -40,20 +40,23 @@ if __name__ == "__main__" :
 
     m = 3 # number of the agents
     avars = [[str(j) for j in range(n) if j % m == i] for i in range(m)]
+
     # print(avars)
 
     var_host = get_var_host(avars = avars)
-    var_nodes, fun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode, all_vars = pro.vars)
-    for agent_var_nodes in var_nodes :
-        for var_node in agent_var_nodes.values() :
-            var_node.fnb_msgs = {fnb.name : [1] * len(var_node.domain.values) for fnb in var_node.fnbs}
-    list(var_nodes[0].values())[0].source = ""
 
-    sub_pros = pro.split(avars = avars)
+    def con_host(con, var_host) :
+        ids = set([var_host(var) for var in con.vars])
+        return [max(ids)]
+
+    avar_nodes, afun_nodes, fun_host = get_factor_nodes(pro = pro, avars = avars, con_host = con_host,
+        var_node_cls = MaxSumAgent.VariableNode, fun_node_cls = MaxSumAgent.FunctionNode)
+
+    sub_pros = pro.split(avars = avars, con_host = functools.partial(con_host, var_host = var_host))
     agents = []
     for i in range(m) :
         agents.append(MaxSumAgent(id = i, pro = sub_pros[i],
-            var_nodes = var_nodes[i], fun_nodes = fun_nodes[i], limit = 10,
+            var_nodes = avar_nodes[i], fun_nodes = afun_nodes[i], limit = 50,
             var_host = var_host, fun_host = fun_host, log_dir = log_dir))
 
     for i, agent in enumerate(agents) :
@@ -63,7 +66,7 @@ if __name__ == "__main__" :
         print("-" * 50)
 
     monitor = Monitor()
-    time_cost = monitor.run(agents = agents, timeout = 0.2)
+    time_cost = monitor.run(agents = agents, timeout = 1)
     print("Time cost: %s" % time_cost)
     print("-" * 50)
     print("Monitor.mem: %s" % monitor.mem)
